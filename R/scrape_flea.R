@@ -21,8 +21,10 @@ scrape_fleaflick <- function(
 
     flea_page <- RCurl::getURL(flea_url)
 
-    flea_table <- tryCatch(XML::readHTMLTable(flea_page, which = 1, stringsAsFactors = FALSE, skip.rows = 1:2),
-                           error = function(e)return(flea_dt[0])
+    flea_table <- tryCatch(
+      XML::readHTMLTable(flea_page, which = 1, stringsAsFactors = FALSE, 
+                         skip.rows = 1:2),
+      error = function(e)return(flea_dt[0])
     )
 
     if(nrow(flea_table) == 0)
@@ -46,21 +48,24 @@ scrape_fleaflick <- function(
     col_category[grep("Passing", col_category)] <- "Passing"
     col_category[grep("Defense", col_category)] <- "Defense"
     col_category[grep("Kicking", col_category)] <- "Kicking"
-
-    names(flea_table) <- trimws(paste(col_category, names(flea_table)))
+    
+    names(flea_table) <-  make.unique(trimws(paste(col_category, names(flea_table))))
 
     flea_table[, which(names(flea_table) == "")] <- NULL
-
+    flea_table[, which(names(flea_table) %in% paste0(".", 1:9))] <- NULL
+    
     flea_table[, 1] <- gsub("^(Q|D|OUT|SUS|IR)([A-Z])", "\\2", flea_table[, 1])
 
     flea_table <- flea_table[1:20,]
-    names_pos_team <- strsplit(flea_table[, 1], " ")
 
-    flea_table[, 1] <- unlist(lapply(names_pos_team, function(n)ifelse(length(n) > 3,paste(n[1:(length(n)-3)], collapse = " "), "")))
-    flea_table$Pos <- unlist(lapply(names_pos_team, function(n)ifelse(length(n) > 2,n[(length(n)-2)], "")))
-    flea_table$Team <- unlist(lapply(names_pos_team, function(n)ifelse(length(n) > 1, n[(length(n)-1)], "")))
-
-    player_links <- unlist(lapply(XML::getNodeSet(XML::htmlParse(flea_page), "//a[@class='player-text']"), XML::xmlGetAttr, name = "href"))
+    flea_table <- tidyr::extract(
+        flea_table, Name, c("Player", "Pos", "Team", "Bye"), 
+        "([A-Za-z0-9'-.\\s]+)\\s([QRWTDKL][BRESL/]*[SFT]*[T]*)\\s([ABCDFGHIJKLMNOPSTW][ACIOUHFTELNYBR][TLCFIUSRNEDGJKA]*)\\s*\\(*([0-9]*)\\)*"
+      )
+    player_links <- unlist(lapply(XML::getNodeSet(XML::htmlParse(flea_page), "
+                                                  //a[@class='player-text']"), 
+                                  XML::xmlGetAttr, name = "href"))
+    
     player_id <- stringr::str_extract(player_links, "[0-9]{3,}$")
 
     if(length(player_id) < nrow(flea_table))
@@ -73,7 +78,6 @@ scrape_fleaflick <- function(
     flea_qry$tableOffset <- as.integer(flea_qry$tableOffset) + 20
 
     flea_url <- httr::modify_url(flea_url, query = flea_qry)
-
   })
 
   return(flea_dt)

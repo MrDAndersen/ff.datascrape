@@ -25,8 +25,6 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
     cbs_path <- paste(position, week, "avg/standard", sep  = "/")
   }
 
-
-
   cbs_url <- httr::modify_url(cbs_base, path = paste0(httr::parse_url(cbs_base)$path, cbs_path), query = cbs_qry)
 
   cbs_page <- RCurl::getURL(cbs_url)
@@ -65,14 +63,11 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
 
   player_ids <- stringr::str_extract(player_links, "[0-9]{3,6}")
 
-  name_teams_list <- strsplit(cbs_table[,1], ",Â\\s")
-  player_names <- unlist(lapply(name_teams_list, function(n)n[[1]]))
-  player_teams <- unlist(lapply(name_teams_list, function(n)n[[2]]))
-
-  cbs_table[,1] <- player_names
+  cbs_table <- tidyr::extract(cbs_table, "Player", c("Player", "Team"), "([A-Za-z'-. ]+),[[:alnum:]]\\s([A-Za-z]+)")
+  
   if(length(player_ids) == nrow(cbs_table))
-  cbs_table$id <- player_ids
-  cbs_table$Team <- player_teams
+    cbs_table$id <- player_ids
+  
   cbs_table$Pos <- position
 
   return(cbs_table)
