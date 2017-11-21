@@ -67,13 +67,9 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE")){
     espn_tbl$Pos <- pos
 
     if(any(names(espn_tbl) == "Each Pass Completed")){
-      attComp <- data.table::rbindlist(
-        lapply(strsplit(espn_tbl$`Each Pass Completed`, "/"),
-               function(att_comp)data.table::as.data.table(t(att_comp)))
-      )
-      espn_tbl[,"Passes Attempted"] <- attComp[,1]
-      espn_tbl[, "Passes Completed"] <- attComp[,2]
-      espn_tbl$`Each Pass Completed` <- NULL
+      espn_tbl <- tidyr::extract(data = espn_tbl, col = "Each Pass Completed",
+                                       into = c("Passes Completed", "Passes Attempted"),
+                                       "([0-9]+\\.*[0-9]*)/([0-9]+\\.*[0-9]*)")
     }
 
     espn_dt <- data.table::rbindlist(list(espn_dt, espn_tbl), fill = TRUE)
@@ -87,3 +83,5 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE")){
 
   return(espn_dt)
 }
+
+
