@@ -31,6 +31,11 @@ scrape_numfire <- function(type = c("season", "weekly"),
   }))
 
   nmf_player_table <- nmf_player_table[-1]
+  if(position == "DEF"){
+    nmf_player_table$Player <- trimws(gsub("D/ST", "", nmf_player_table$Player))
+    nmf_player_table$Pos <- "DEF"
+  }
+
 
   nmf_stat_table <- nmf_tables[[2]]
   names(nmf_stat_table) <- paste(names(nmf_stat_table), nmf_stat_table[1,])
