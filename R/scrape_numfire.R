@@ -27,15 +27,18 @@ scrape_numfire <- function(type = c("season", "weekly"),
 
   nmf_player_table <- data.table::rbindlist(lapply(nmf_player_table, function(pl){
     pos_team <- unlist(strsplit(gsub("[()]", "", pl[3]), ", "))
-    data.table::data.table(Player = pl[[1]], Pos = pos_team[1], Team = pos_team[2])
+    if(position != "DEF")
+      data.table::data.table(Player = pl[[1]], Pos = pos_team[1], Team = pos_team[2])
+    else
+      data.table::data.table(Player = pl[1], Pos = pos_team[1], Team = pos_team[2])
   }))
 
-  nmf_player_table <- nmf_player_table[-1]
+  nmf_player_table <- nmf_player_table[-1,]
+
   if(position == "DEF"){
     nmf_player_table$Player <- trimws(gsub("D/ST", "", nmf_player_table$Player))
-    nmf_player_table$Pos <- "DEF"
+    nmf_player_table$Pos <- "D/ST"
   }
-
 
   nmf_stat_table <- nmf_tables[[2]]
   names(nmf_stat_table) <- paste(names(nmf_stat_table), nmf_stat_table[1,])
