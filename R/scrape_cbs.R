@@ -7,6 +7,7 @@
 #' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #'
 #' @return A \link{data.table} with results from the scrape.
+#' @import stringr
 #' @export
 scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "DST")){
 

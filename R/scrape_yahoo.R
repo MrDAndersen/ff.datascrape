@@ -1,3 +1,4 @@
+#' @import httr XML RCurl
 #' @export
 scrape_yahoo <- function(league_id,
                          position = c("O", "DP", "QB", "RB", "WR", "TE", "K", "DEF",

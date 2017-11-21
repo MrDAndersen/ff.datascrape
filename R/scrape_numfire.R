@@ -1,3 +1,4 @@
+#' @import xml2 rvest httr tidyr
 #' @export
 scrape_numfire <- function(type = c("season", "weekly"),
                            position = c("Off", "QB", "RB", "WR", "TE", "RB/WR", "K", "DEF", "IDP")){

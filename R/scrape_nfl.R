@@ -1,3 +1,4 @@
+#' @import  httr data.table
 #' @export
 scrape_nfl <- function(season = NULL, week = NULL,
                        position = c("QB", "RB", "WR", "TE", "K" , "DEF", "DL", "LB", "DB")){
