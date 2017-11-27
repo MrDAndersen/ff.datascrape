@@ -47,24 +47,14 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE")){
 
     names(espn_tbl) <- espn_cols
 
-    name_team_pos <- strsplit(espn_tbl[,1], ", ")
+    espn_tbl$PLAYER = gsub("\\*", "", espn_tbl$PLAYER)
 
-    player_names <- unlist(lapply(name_team_pos, function(n)n[1]))
-
-    team_pos <- unlist(lapply(name_team_pos, function(n)n[2]))
-
-    team_pos_list <- strsplit(team_pos, "\\s")
-
-    teams <- unlist(lapply(team_pos_list, function(n)n[1]))
-    pos <- unlist(lapply(team_pos_list, function(n)n[2]))
+    espn_tbl <- tidyr::extract(data = espn_tbl, col = "PLAYER", into = c("Player", "Team", "Pos", "Status"),
+                               "([A-Za-z .'-]+),\\s([A-Za-z]+)\\s*([A-Za-z]+)\\s*([A-Za-z]*)")
 
     playerid <- unique(unlist(lapply(XML::getNodeSet(XML::htmlParse(espn_page), "//table//a[@class='flexpop']"), XML::xmlGetAttr, name = "playerid")))
 
-    espn_tbl[,1] <- gsub("*", "", player_names, fixed = TRUE)
-
     espn_tbl$id <- playerid
-    espn_tbl$Team <- teams
-    espn_tbl$Pos <- pos
 
     if(any(names(espn_tbl) == "Each Pass Completed")){
       espn_tbl <- tidyr::extract(data = espn_tbl, col = "Each Pass Completed",

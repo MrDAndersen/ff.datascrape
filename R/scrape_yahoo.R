@@ -34,76 +34,54 @@ scrape_yahoo <- function(league_id,
 
   yahoo_url <- httr::modify_url(yahoo_base, path = yahoo_path, query = yahoo_qry)
 
-  # Initializing a data table to hold results
-  yahoo_dt <- data.table::data.table()
+  # Initializing a data frame to hold results
+  yahoo_df <- data.frame()
 
   # Loop through the pages until we get a page with less than two rows
   repeat({
-    yahoo_page <- RCurl::getURL(yahoo_url)
-    yahoo_tbl <- tryCatch(XML::readHTMLTable(yahoo_page, which = 2, stringsAsFactors = FALSE),
-                          error = function(e)yahoo_dt[0])
-    if(nrow(yahoo_tbl) <= 2)
-      break
+    yahoo_page <- xml2::read_html(yahoo_url)
 
+    yahoo_html_tbl <- xml2::xml_find_all(yahoo_page, "//table")[[2]]
+
+    yahoo_tbl <- rvest::html_table(yahoo_html_tbl)
+
+    if(nrow(yahoo_tbl) <= 1)
+      break
 
     # The yahoo page has a table header with two rows. We will use info from the first to add
     # to the second,
-    top_tbl_header <- XML::getNodeSet(XML::htmlParse(yahoo_page), "//table//thead/tr")[[1]]
-    th_list <- lapply(XML::xmlChildren(top_tbl_header), XML::xmlGetAttr, name = "colspan")
-    th_values <- lapply( XML::xmlChildren(top_tbl_header), XML::xmlValue)
+    names(yahoo_tbl) <- trimws(paste(names(yahoo_tbl), yahoo_tbl[1,]))
+    yahoo_tbl <- yahoo_tbl[-1,]
 
-    th_list <- lapply(th_list, function(th)ifelse(is.null(th), "1", th))
+    yahoo_tbl[, c(which(nchar(names(yahoo_tbl)) == 0 ), grep("NA", names(yahoo_tbl)))] <- NULL
 
-    # Removing extra characters in the column names
-    table_cols <- trimws(gsub("Â|\\s$|î€‚", "", names(yahoo_tbl)))
+    yahoo_tbl[,1] <- gsub("[[:cntrl:]]+", "", yahoo_tbl[,1])
 
-    # Based on the column span of the first header row we generate a vector of category
-    # names
-    col_category <- vector(mode = "character")
-    for(th in seq_along(unlist(th_list))){
-      if(as.numeric(th_list[[th]]) == 1)
-        col_category <- c(col_category, "")
-      else
-        col_category <- c(col_category, rep(th_values[[th]], as.numeric(th_list[[th]])))
-    }
-    col_category <- trimws(gsub("Â|\\s$|î€‚", "", col_category))
+    names(yahoo_tbl)[1] <- "Player"
+    yahoo_tbl <- tidyr::extract(yahoo_tbl, Player, c("Note", "Player", "Team", "Pos", "Status/Game/Opp"),
+                                "\\s*(.+Note[s]*)\\s+(.+)\\s([[:alpha:]]{2,3})\\s\\-\\s([[:alpha:]]{1,3},*[[:alpha:]]*)\\s{2,}(.+)"
+    )
 
-    # Combining the category names with the original names and updating the table
-    new_cols <- trimws(paste(col_category, table_cols))
+    if(any(names(yahoo_tbl) == "Forecast"))
+      yahoo_tbl$Forecast <- NULL
 
-    names(yahoo_tbl) <- new_cols
-    yahoo_tbl[which(names(yahoo_tbl) == "")] <- NULL
+    if(any(names(yahoo_tbl) == "Owner"))
+      yahoo_tbl$Owner <- NULL
 
-    # Cleaning up the player name column
-    yahoo_tbl[,1] <- gsub(" {2,15}", "", yahoo_tbl[,1])
-    yahoo_tbl[,1] <- gsub("\\n", "", yahoo_tbl[,1])
-    yahoo_tbl[,1] <- gsub("No new player Notes|New Player Note|Player Note", "", yahoo_tbl[,1])
+    yahoo_tbl[, c("Note", "Status/Game/Opp")] <- NULL
 
-    # Extracting name, team and position
-    name_list <- strsplit(yahoo_tbl[,1], " - ")
-    name_teams <- unlist(lapply(name_list, function(nl)nl[1]))
-    name_team_list <- strsplit(name_teams, " ")
-
-    player_pos <- unlist(lapply(name_list, function(nl){
-      pos_list <- strsplit(nl[2], " ")
-      return(pos_list[[1]][1])
-    }))
-
-    teams <- unlist(lapply(name_team_list, function(tm)tm[length(tm)]))
-    player_names <- unlist(lapply(name_team_list, function(tm)paste(tm[1:(length(tm)-1)], collapse = " ")))
+    names(yahoo_tbl) <- gsub("[^A-Za-z0-9]+$", "", iconv(names(yahoo_tbl)))
 
     # Getting Yahoo IDs from the player links
-    yahoo_links <- XML::getHTMLLinks(yahoo_page)
-    yahoo_ids <- basename((yahoo_links[grep("https://sports.yahoo.com/nfl/players/[0-9]{3,6}$", yahoo_links)]))
+    yahoo_ids <- basename(xml2::xml_attr(
+      xml2::xml_find_all(
+        yahoo_page,
+        "//a[contains(@href, 'nfl/players') and not(contains(@class, 'playernote'))]"),
+      attr = "href"))
 
     if(length(yahoo_ids) == nrow(yahoo_tbl))
       yahoo_tbl$id <- yahoo_ids
-
-    yahoo_tbl$Team <- teams
-    yahoo_tbl$Pos <- player_pos
-    yahoo_tbl[, 1] <- player_names
-
-    yahoo_dt <- data.table::rbindlist(list(yahoo_dt, yahoo_tbl), fill = TRUE)
+    yahoo_df <- dplyr::bind_rows(yahoo_df, yahoo_tbl)
 
     yahoo_qry <- httr::parse_url(yahoo_url)$query
     yahoo_qry$count <- as.integer(yahoo_qry$count) + 25
@@ -112,5 +90,5 @@ scrape_yahoo <- function(league_id,
 
   })
 
-  return(yahoo_dt)
+  return(yahoo_df)
 }

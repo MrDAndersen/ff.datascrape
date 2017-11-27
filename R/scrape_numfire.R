@@ -23,21 +23,21 @@ scrape_numfire <- function(type = c("season", "weekly"),
   nmf_proj <- xml2::read_html(nmf_url)
   nmf_tables <- rvest::html_table(nmf_proj)
 
-  nmf_player_table <- strsplit(nmf_tables[[1]][,1], "\\n")
-  nmf_player_table <- lapply(nmf_player_table, trimws)
+  player_cells <- xml2::xml_find_all(nmf_proj, "//td[@class='player']")
+  nmf_ids <- basename(unlist(lapply(xml2::xml_children(player_cells), xml2::xml_attr, attr = "href")))
 
-  nmf_player_table <- data.table::rbindlist(lapply(nmf_player_table, function(pl){
-    pos_team <- unlist(strsplit(gsub("[()]", "", pl[3]), ", "))
-    if(position != "DEF")
-      data.table::data.table(Player = pl[[1]], Pos = pos_team[1], Team = pos_team[2])
-    else
-      data.table::data.table(Player = pl[1], Pos = pos_team[1], Team = pos_team[2])
-  }))
+  nmf_player_table <- nmf_tables[[1]]
+  names(nmf_player_table) <- "Player"
+
+  nmf_player_table <- tidyr::extract(nmf_player_table, "Player", c("Player", "Abbr Name", "Pos", "Team"),
+                 "([A-Za-z ,.'-/]+)\\n *([A-Za-z ,.'-/]+)\\n *\\(([A-Z]+), ([A-Z]+)\\)")
 
   nmf_player_table <- nmf_player_table[-1,]
 
+  nmf_player_table$id <- nmf_ids
   if(position == "DEF"){
     nmf_player_table$Player <- trimws(gsub("D/ST", "", nmf_player_table$Player))
+    nmf_player_table$`Abbr Name` <- NULL
     nmf_player_table$Pos <- "D/ST"
   }
 
