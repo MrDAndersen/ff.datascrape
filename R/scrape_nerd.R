@@ -1,6 +1,6 @@
 #' @export 
 scrape_fantasynerd <- function(season = NULL, week = NULL, 
-                               position = c("QB", "RB", "WR", "TE", "K"), 
+                               position = c("QB", "RB", "WR", "TE", "K", "DEF"), 
                                ffn_key = "test"){
   
   data_type <- ifelse(is.null(week), "draft", "weekly")
