@@ -3,6 +3,7 @@
 export(scrape_cbs)
 export(scrape_espn)
 export(scrape_fantasydata)
+export(scrape_fantasynerd)
 export(scrape_fantasypros)
 export(scrape_fantasysharks)
 export(scrape_fftoday)
