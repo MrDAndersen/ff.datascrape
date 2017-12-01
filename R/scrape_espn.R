@@ -1,7 +1,8 @@
+#' @import tidyverse httr rvest
 #' @export
-scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE")){
-  espn_positions <- c("QB" = 0, "RB" = 2, "WR" = 4, "TE" = 6)
-  espn_base <- httr::build_url(httr::parse_url("http://games.espn.com/ffl/tools/projections"))
+scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST", "K")){
+  espn_positions <- c("QB" = 0, "RB" = 2, "WR" = 4, "TE" = 6, "DST" = 16, "K" = 17)
+  espn_base <- str_to_url("http://games.espn.com/ffl/tools/projections")
   espn_qry <- list(slotCategoryId = espn_positions[[position]])
 
   if(week == 0){
@@ -14,64 +15,60 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE")){
 
   espn_qry$startIndex <- 0
 
-  espn_url <- httr::modify_url(espn_base, query = espn_qry)
+  espn_url <- modify_url(espn_base, query = espn_qry)
 
-  espn_dt <- data.table::data.table()
+  espn_session <- html_session(espn_url)
 
+  espn_data <- data.frame()
   repeat({
-    espn_page <- xml2::read_html(espn_url)
+    print(espn_session$url)
+    espn_page <- read_html(espn_session)
 
-    espn_tbl <- rvest::html_table(rvest::html_nodes(espn_page, "table")[[2]], header = FALSE)
-    espn_tbl <- espn_tbl[-c(1,2),]
+    espn_tbl <- espn_page %>%
+      html_node("#playertable_0") %>%
+      html_table()
 
-    if(nrow(espn_tbl) == 0)
-      break
+    names(espn_tbl) <- gsub("DEFENSIVE PLAYERS |PLAYERS |KICKERS ", "",
+                            paste(names(espn_tbl), espn_tbl[1,]))
 
-    tbl_header <- XML::getNodeSet(XML::htmlParse(espn_page), "//table//tr")[[3]]
+    espn_tbl <- espn_tbl[-1,]
 
-    header_child <- XML::xmlChildren(tbl_header)
+    if(position != "DST"){
+      espn_tbl <- espn_tbl %>%
+        extract("PLAYER, TEAM POS", into = c("PLAYER", "TEAM", "POS", "STATUS"),
+                "([A-Za-z .'-\\*]+),\\s([A-Za-z]+)\\s*([A-Za-z]+)\\s*([A-Za-z]*)")
+    } else {
+      espn_tbl <- espn_tbl %>%
+        extract("PLAYER, TEAM POS", into = c("PLAYER", "POS"),
+                "([A-Za-z0-9 ./'-\\*]+)\\s([A-Za-z/]+)")
+    }
+    espn_ids <- espn_page %>%
+      html_nodes("table td.playertablePlayerName a.flexpop:first-of-type") %>%
+      html_attr("playerid")
 
-    espn_cols <- unlist(lapply(header_child[which(names(header_child) == "td")], function(td){
-      if(any(names(XML::xmlAttrs(td)) == "title"))
-        return(XML::xmlGetAttr(td, "title"))
-      else{
-        tdc <- XML::xmlChildren(td)
-        if(any(names(tdc) == "span"))
-          return(XML::xmlGetAttr(tdc[["span"]], "title"))
-        else
-          return(paste0(unlist(lapply(tdc, XML::xmlValue)), collapse = ""))
-      }
-    }), use.names = FALSE)
+    espn_tbl <- espn_tbl %>% add_column(id = espn_ids, .before = 1)
 
-    espn_cols <- gsub("\n|, TEAM POS", "", espn_cols)
-
-    names(espn_tbl) <- espn_cols
-
-    espn_tbl$PLAYER = gsub("\\*", "", espn_tbl$PLAYER)
-
-    espn_tbl <- tidyr::extract(data = espn_tbl, col = "PLAYER", into = c("Player", "Team", "Pos", "Status"),
-                               "([A-Za-z .'-]+),\\s([A-Za-z]+)\\s*([A-Za-z]+)\\s*([A-Za-z]*)")
-
-    playerid <- unique(unlist(lapply(XML::getNodeSet(XML::htmlParse(espn_page), "//table//a[@class='flexpop']"), XML::xmlGetAttr, name = "playerid")))
-
-    espn_tbl$id <- playerid
-
-    if(any(names(espn_tbl) == "Each Pass Completed")){
-      espn_tbl <- tidyr::extract(data = espn_tbl, col = "Each Pass Completed",
-                                       into = c("Passes Completed", "Passes Attempted"),
-                                       "([0-9]+\\.*[0-9]*)/([0-9]+\\.*[0-9]*)")
+    if(any(names(espn_tbl) == "PASSING C/A")){
+      espn_tbl <- espn_tbl %>%
+        extract(col = "PASSING C/A", c("PASSING COMP", "PASSING ATT"),
+                "([0-9]+\\.*[0-9]*)/([0-9]+\\.*[0-9]*)")
     }
 
-    espn_dt <- data.table::rbindlist(list(espn_dt, espn_tbl), fill = TRUE)
 
-    espn_qry <- httr::parse_url(espn_url)$query
-    espn_qry$startIndex <- as.numeric(espn_qry$startIndex) + 40
+    espn_data <- bind_rows(espn_data, espn_tbl)
 
-    espn_url <- httr::modify_url(espn_url, query = espn_qry)
+    next_url <- espn_page %>%
+      html_node("a:contains('NEXT')") %>%
+      html_attr("href")
+
+    if(is.na(next_url))
+      break
+
+    espn_session <- espn_session %>% jump_to(next_url)
+
   })
 
-
-  return(espn_dt)
+  return(espn_data)
 }
 
 
