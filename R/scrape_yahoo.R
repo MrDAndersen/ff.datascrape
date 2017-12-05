@@ -44,7 +44,6 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
 
   yahoo_url <- modify_url(yahoo_base, path = yahoo_path, query = yahoo_qry)
 
-  print(yahoo_url)
   yahoo_session <- yahoo_url %>% html_session()
 
   player_cols <- c("Offense", "Kickers", "Defense/Special Teams", "Defensive Players")
@@ -95,7 +94,6 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
     yahoo_session <- next_url %>% jump_to(x=yahoo_session, url =.)
   })
 
-  print(yahoo_data)
   yahoo_data <- yahoo_data %>%
     extract(., Yahoo_Player, c("Note", "Player", "Team", "Pos", "Status/Game/Opp"),
             "\\s*(.+Note[s]*)\\s+(.+)\\s([[:alpha:]]{2,3})\\s\\-\\s([[:alpha:]]{1,3},*[[:alpha:]]*)\\s{2,}(.+)") %>%
