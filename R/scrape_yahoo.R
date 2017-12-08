@@ -99,5 +99,6 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
             "\\s*(.+Note[s]*)\\s+(.+)\\s([[:alpha:]]{2,3})\\s\\-\\s([[:alpha:]]{1,3},*[[:alpha:]]*)\\s{2,}(.+)") %>%
     select(., -one_of(c("Note", "Status/Game/Opp")))
 
+  attributes(yahoo_data)[c("source", "type", "position", "season", "week")] <- list("Yahoo", stat_type, position, season, week)
   return(yahoo_data)
 }
