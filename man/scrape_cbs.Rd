@@ -19,4 +19,3 @@ A \link{data.table} with results from the scrape.
 \description{
 Use this function to scrape fantasy football projections from CBS.
 }
-

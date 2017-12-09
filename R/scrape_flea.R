@@ -66,6 +66,7 @@ scrape_fleaflick <- function(
     flea_session <- flea_session %>% jump_to(next_url)
   })
 
-  return(flea_data)
+  structure(flea_data, source = "FleaFlicker", position = position)
+
 }
 

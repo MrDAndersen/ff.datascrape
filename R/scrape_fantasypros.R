@@ -30,5 +30,5 @@ scrape_fantasypros <- function(season = NULL, week = NULL,
   fp_table <- fp_table %>%  add_column(id = fp_ids, .before = 1)
   fp_table <- fp_table %>%  add_column(Pos = position, .after = "Player")
 
-  return(fp_table)
+  structure(fp_table, source = "FantasyPros", season = season, week = week, position = position)
 }

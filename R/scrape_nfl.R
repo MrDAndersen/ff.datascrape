@@ -8,7 +8,7 @@ scrape_nfl <- function(season = NULL, week = NULL,
   )
 
   position <- match.arg(position)
-  
+
   nfl_base <- httr::build_url(httr::parse_url("http://api.fantasy.nfl.com/v1/players/stats"))
 
   if(is.null(week)){
@@ -21,13 +21,13 @@ scrape_nfl <- function(season = NULL, week = NULL,
 
   if(!is.null(season))
     nfl_qry$season <- season
-  
+
   if(!is.null(week)){
     week <- as.character(week)
     week <- match.arg(week, choices = 1:21)
     nfl_qry$week <- week
   }
-  
+
   if(!is.null(position))
     nfl_qry$position <- position
 
@@ -50,7 +50,6 @@ scrape_nfl <- function(season = NULL, week = NULL,
 
   }))
 
-  return(nfl_data)
-
+  structure(nfl_data, source = "NFL", season = season, week = week, position = position)
 }
 

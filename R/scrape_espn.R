@@ -21,7 +21,6 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST"
 
   espn_data <- data.frame()
   repeat({
-    print(espn_session$url)
     espn_page <- read_html(espn_session)
 
     espn_tbl <- espn_page %>%
@@ -68,7 +67,7 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST"
 
   })
 
-  return(espn_data)
+  structure(espn_data, source = "ESPN", season = season, week = week, position = position)
 }
 
 

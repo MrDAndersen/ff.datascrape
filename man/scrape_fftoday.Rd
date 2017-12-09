@@ -10,4 +10,3 @@ scrape_fftoday(season = NULL, week = NULL, position = c("QB", "RB", "WR",
 \description{
 Scrape data from FFToday
 }
-

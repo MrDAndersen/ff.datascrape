@@ -30,5 +30,5 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
   ### NOTE: Fantasysharks is using the same id as MFL
   fs_table <- fs_table %>% add_column(id = str_pad(fs_ids, 4, "left", "0"), .before = 1)
 
-  return(fs_table)
+  structure(fs_table, source = "FantasySharks", season = season, week = week, position = position)
 }

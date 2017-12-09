@@ -31,5 +31,5 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
     html_attr("href") %>%
     gsub("(^.+','Sort\\$)(.+)('\\))", "\\2", .)
 
-  return(fd_table)
+  structure(fd_table, source = "FantasyData", week = week, position = position)
 }
