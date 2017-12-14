@@ -12,9 +12,11 @@ shark_segment <- function(season, week){
 
 #' @export
 offensive_columns <- function(tbl_columns){
-  tbl_columns <- tbl_columns %>% 
+  tbl_columns <- tbl_columns %>%
     gsub(pattern = "(Rush|Pass|Rec)(ing|eiving)", replacement = "\\L\\1", ignore.case = TRUE, perl = TRUE) %>%
     gsub(pattern = "(TD|YD)$", replacement = "\\L\\1s",  ignore.case = TRUE, perl = TRUE) %>%
+    gsub(pattern = "^ru*sh$", replacement = "rush att", ignore.case = TRUE) %>%
+    gsub(pattern = "^int$", replacement = "pass int", ignore.case = TRUE) %>%
     gsub(pattern = "rush$", replacement = "att", ignore.case = TRUE) %>%
     gsub(pattern = "Cmp", replacement = "Comp", ignore.case = TRUE,  perl = TRUE) %>%
     gsub(pattern = "(Att)(empt)*s*", replacement = "\\L\\1",  ignore.case = TRUE, perl = TRUE) %>%
@@ -28,7 +30,7 @@ offensive_columns <- function(tbl_columns){
     gsub(pattern = "Per", replacement = "per", ignore.case = TRUE, perl = TRUE) %>%
     gsub(pattern ="(pass|rush|rec)([[:alpha:]])", replacement = "\\1 \\2") %>%
     gsub(pattern ="ydsperatt", replacement = "avg") %>%
-    gsub(pattern ="comppct", replacement = "comp pct", ignore.case= TRUE) 
-  
+    gsub(pattern ="comppct", replacement = "comp pct", ignore.case= TRUE)
+
   return(tbl_columns)
 }
