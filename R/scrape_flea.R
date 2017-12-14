@@ -28,7 +28,7 @@ scrape_fleaflick <- function(
 
     names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$", "", names(flea_table)),
                                flea_table[1,]))
-
+    
     flea_table <- flea_table[-1,]
 
     flea_table <- flea_table %>% repair_names(prefix = "")
@@ -37,6 +37,13 @@ scrape_fleaflick <- function(
 
     flea_table <- flea_table %>% select(-one_of(del_cols))
 
+    if(position == "K"){
+      names(flea_table) <- gsub("(\\%|Att)$", "FG \\1", names(flea_table))
+      names(flea_table) <- gsub("(\\%|Att)1$", "XP \\1", names(flea_table))
+      names(flea_table) <- gsub("%", "Pct", names(flea_table))
+      names(flea_table) <- gsub("Kicking\\s", "", names(flea_table))
+    }
+    
     flea_table[, 1] <- gsub("^(Q|D|OUT|SUS|IR)([A-Z])", "\\2", flea_table[, 1])
 
     flea_table <- flea_table[1:(nrow(flea_table) - 1),]

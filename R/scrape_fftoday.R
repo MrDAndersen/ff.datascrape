@@ -75,7 +75,10 @@ scrape_fftoday <- function(
 
     if(length(player_id) == nrow(fft_table))
       fft_table <- tibble::add_column(fft_table, id = player_id, .before = 1)
-
+    
+    if(!any(names(fft_table) == "Player"))
+      fft_table <- fft_table %>% rename(Player = Team)
+    
     fft_table <- tibble::add_column(fft_table, Pos =  position, .after =  which(names(fft_table) == "Player"))
 
     fft_data <- dplyr::bind_rows(fft_data, fft_table)
@@ -88,7 +91,34 @@ scrape_fftoday <- function(
     fft_session <- rvest::jump_to(fft_session, next_url)
 
   })
+  
+  if(position %in% c("QB", "RB", "WR", "TE"))
+     names(fft_data) <- offensive_columns(names(fft_data))
+  if(position == "K"){
+    names(fft_data) <- names(fft_data) %>%
+      gsub("^FG$", "FG Pct", .) %>%
+      gsub("^EP", "XP", .) %>%
+      gsub("Made", "", .) %>%
+      gsub("Miss", " Miss", .) %>%
+      gsub("^FGM$", "fg", .) %>%
+      gsub("^FGA$", "fg att", .) %>%
+      gsub("^XPM$", "xp", .) %>%
+      gsub("^XPA$", "xp att", .) 
+  }
+  
+  if(position == "DEF"){
+    names(fft_data) <- names(fft_data) %>%
+      gsub("(Sack|INT|Safety)", "dst \\1", .) %>%
+      gsub("FR", "dst fum rec", .) %>%
+      gsub("DefTD", "dst tds", .) %>%
+      gsub("PA", "dst pts_Allow", .) %>%
+      gsub("PaYdG", "dst pass yds game", .) %>%
+      gsub("RuYdG", "dst rush yds game", .) %>%
+      gsub("KickTD", "dst kick ret td", .)
+  }
+  
 
+  fft_data <- fft_data %>% janitor::clean_names()
   structure(fft_data, source = "FFToday", season = season, week = week, position = position)
 }
 

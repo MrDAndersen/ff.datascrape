@@ -99,5 +99,5 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
             "\\s*(.+Note[s]*)\\s+(.+)\\s([[:alpha:]]{2,3})\\s\\-\\s([[:alpha:]]{1,3},*[[:alpha:]]*)\\s{2,}(.+)") %>%
     select(., -one_of(c("Note", "Status/Game/Opp")))
 
-  structre(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week)
+  structure(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week)
 }

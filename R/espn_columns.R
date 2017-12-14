@@ -25,5 +25,5 @@ espn_columns <- c(
   dstFumRec = "DEFENSIVE FR",
   dstInt = "DEFENSIVE INT",
   dstIntRetTd = "TD RETURNS ITD",
-  dstFumRetTd = "TD RETURNS FTD"   
+  dstFumRetTd = "TD RETURNS ITD"   
 )

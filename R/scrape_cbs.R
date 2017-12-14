@@ -64,7 +64,25 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
 
   cbs_table <- cbs_table %>% select(-one_of(!!!del_cols)) %>%
     data.frame(stringsAsFactors = FALSE)
+  
+  names(cbs_table) <- names(cbs_table) %>%
+    gsub("Misc.FL", "fumbles lost", .) %>%
+    gsub("YAtt", "YardsPerAttempt", .) %>%
+    gsub("FGA", "fg Att", .) %>%
+    gsub("^Int$", "dst int", .) %>%
+    gsub("DFR", "dst fum rec", .) %>%
+    gsub("FF", "dst fum force", .) %>%
+    gsub("SACK", "dst sack", .) %>%
+    gsub("DTD", "dst Tds", .) %>%
+    gsub("STY", "dst safety", .) %>%
+    gsub("PA", "dst pts_Allow", .) %>%
+    gsub("TYdA", "dst yds_Allow", .)
+  
+  if(position %in%  c("QB", "RB", "WR", "TE"))
+    names(cbs_table) <- offensive_columns(names(cbs_table))
 
+  cbs_table <- cbs_table %>% janitor::clean_names()
+  
   structure(cbs_table, source = "CBS", week = week)
 }
 

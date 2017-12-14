@@ -50,7 +50,16 @@ scrape_numfire <- function(season = NULL, week = NULL,
   }
 
   nmf_stat_table <- html_table(nmf_tables[[2]])
-  names(nmf_stat_table) <- paste(names(nmf_stat_table), nmf_stat_table[1,])
+  nmf_columns <- paste(names(nmf_stat_table), nmf_stat_table[1,])
+  nmf_columns <- gsub("(FanDuel|DraftKings|Yahoo)", "\\L\\1", nmf_columns, perl = TRUE)
+  if(position == "K"){
+    nmf_columns <- nmf_columns %>%  gsub(".Made.By.Distance.", " ", .) %>%
+      gsub("Kicking.", "", .) %>%
+      gsub("([^0-9])([0-9])([^0-9])", "\\10\\2\\3", . ) %>%
+      gsub("(FG|XP)M", "\\1", .) %>%  gsub("(FG|XP)(A)", "\\1 \\2tt", . ) %>%
+      gsub("[[:punct:]]", "", .)
+  }
+  names(nmf_stat_table) <- nmf_columns
   nmf_stat_table <- nmf_stat_table %>% slice(-1)
 
   if(any(names(nmf_stat_table) == "Passing C/A")){
