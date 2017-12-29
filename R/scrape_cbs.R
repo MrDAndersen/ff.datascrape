@@ -37,13 +37,19 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
   if(position %in% c("QB", "RB", "WR", "TE")){
     names(cbs_table) <- trimws(paste(cbs_table[1,], cbs_table[2,]))
     cbs_table <- cbs_table %>% slice(-c(1,2))
+    test_col <- cbs_table$`Misc FPTS`
   } else {
     names(cbs_table) <- cbs_table[1,]
     cbs_table <- cbs_table %>% slice(-1)
+    test_col <- cbs_table$FPTS
   }
 
-  if(length(grep("Pages: ", cbs_table[,1])) > 0 )
-    cbs_table <- cbs_table[-grep("Pages: ", cbs_table[,1]),]
+  test_func <- function(x)!as.logical(length(unlist(regmatches(x, regexec("Pages", x)))))
+
+  row_test <- sapply(test_col, test_func, USE.NAMES = FALSE)
+
+
+  cbs_table <- cbs_table[row_test,]
 
   player_links <- cbs_page %>%
     html_nodes("table a[href *= 'playerpage']") %>%
@@ -55,7 +61,7 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
     extract("Player", c("Player", "Team"), "([A-Za-z'-. ]+),\\s([A-Za-z]+)")
 
   if(length(player_ids) == nrow(cbs_table)){
-    cbs_table <- cbs_table %>% add_column(id = player_ids, .before = 1)
+    cbs_table <- cbs_table %>% add_column(cbs_id = player_ids, .before = 1)
   }
 
   cbs_table <- cbs_table %>% add_column(Pos = position, .before = "Team")
@@ -64,7 +70,7 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
 
   cbs_table <- cbs_table %>% select(-one_of(!!!del_cols)) %>%
     data.frame(stringsAsFactors = FALSE)
-  
+
   names(cbs_table) <- names(cbs_table) %>%
     gsub("Misc.FL", "fumbles lost", .) %>%
     gsub("YAtt", "YardsPerAttempt", .) %>%
@@ -73,16 +79,17 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
     gsub("DFR", "dst fum rec", .) %>%
     gsub("FF", "dst fum force", .) %>%
     gsub("SACK", "dst sack", .) %>%
-    gsub("DTD", "dst Tds", .) %>%
+    gsub("DTD", "dst Td", .) %>%
     gsub("STY", "dst safety", .) %>%
     gsub("PA", "dst pts_Allow", .) %>%
     gsub("TYdA", "dst yds_Allow", .)
-  
+
   if(position %in%  c("QB", "RB", "WR", "TE"))
     names(cbs_table) <- offensive_columns(names(cbs_table))
 
-  cbs_table <- cbs_table %>% janitor::clean_names()
-  
+  cbs_table <- cbs_table %>% janitor::clean_names() %>%
+    clean_format() %>%  type_convert()
+
   structure(cbs_table, source = "CBS", week = week)
 }
 

@@ -41,7 +41,7 @@ scrape_numfire <- function(season = NULL, week = NULL,
             "([A-Za-z ,.'-/]+)\\n *([A-Za-z ,.'-/]+)\\n *\\(([A-Z]+), ([A-Z]+)\\)")
 
 
-  nmf_player_table <- nmf_player_table %>% add_column(id = nmf_ids, .before = -1)
+  nmf_player_table <- nmf_player_table %>% add_column(numberfire_id = nmf_ids, .before = -1)
 
   if(position == "DEF"){
     nmf_player_table$Player <- trimws(gsub("D/ST", "", nmf_player_table$Player))
@@ -69,6 +69,34 @@ scrape_numfire <- function(season = NULL, week = NULL,
   }
 
   nmf_data <- bind_cols(nmf_player_table, nmf_stat_table)
+
+  if(position %in% c("Off", "QB", "RB", "WR", "TE", "RB/WR")){
+    names(nmf_data) <- offensive_columns(names(nmf_data))
+  }
+
+  if(position == "DEF"){
+    names(nmf_data) <-names(nmf_data) %>%
+      gsub("defense", "dst", ., ignore.case = TRUE) %>%
+      gsub("yards", "yds", ., ignore.case = TRUE) %>%
+      gsub("points", "pts", ., ignore.case = TRUE) %>%
+      gsub("tds$", "td", ., ignore.case = TRUE) %>%
+      gsub("ints$", "int", ., ignore.case = TRUE) %>%
+      gsub("sacks$", "sack", ., ignore.case = TRUE) %>%
+      gsub("allowed$", "allow", ., ignore.case = TRUE) %>%
+      gsub("fumbles", "fum_rec", ., ignore.case = TRUE)
+  }
+  if(position == "IDP"){
+    names(nmf_data) <-names(nmf_data) %>%
+      gsub("defense", "idp", ., ignore.case = TRUE) %>%
+      gsub("tackles", "solo", ., ignore.case = TRUE) %>%
+      gsub("tds$", "td", ., ignore.case = TRUE) %>%
+      gsub("ints$", "int", ., ignore.case = TRUE) %>%
+      gsub("sacks$", "sack", ., ignore.case = TRUE) %>%
+      gsub("passes defended", "pd", ., ignore.case = TRUE)
+  }
+  nmf_data <- janitor::clean_names(nmf_data) %>%
+    clean_format() %>%  type_convert()
+
   structure(data.frame(nmf_data), source = "NumberFire", season = season,
             week = week, position = position)
 }

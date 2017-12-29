@@ -64,6 +64,8 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
       gsub("Sck", "sacks", .) %>%
       gsub("[[:punct:]]", "", .) %>%
       gsub("Opp1", "scoring_opp", .) %>%
+      gsub("tgt", "rec_tgt", ., ignore.case = TRUE) %>%
+      gsub("Rsh", "Rush", ., ignore.case = TRUE) %>%
       offensive_columns()
   }
 
@@ -74,7 +76,7 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
       gsub("scks", "dst_sack", ., ignore.case = TRUE) %>%
       gsub("int", "dst_int", ., ignore.case = TRUE) %>%
       gsub("fum", "dst_fum_rec", ., ignore.case = TRUE) %>%
-      gsub("deftd", "dst_tds", ., ignore.case = TRUE) %>%
+      gsub("deftd", "dst_td", ., ignore.case = TRUE) %>%
       gsub("safts", "dst_safety", ., ignore.case = TRUE)
   }
 
@@ -86,13 +88,16 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
       gsub("int", "idp_int", ., ignore.case = TRUE) %>%
       gsub("fumfrc", "idp_fum_force", ., ignore.case = TRUE) %>%
       gsub("^fum$", "idp_fum_rec", ., ignore.case = TRUE) %>%
-      gsub("deftd", "idp_tds", ., ignore.case = TRUE) %>%
+      gsub("deftd", "idp_td", ., ignore.case = TRUE) %>%
       gsub("passdef", "idp_pd", ., ignore.case = TRUE)
   }
 
   ### NOTE: Fantasysharks is using the same id as MFL
-  fs_table <- fs_table %>% add_column(id = str_pad(fs_ids, 4, "left", "0"), .before = 1)
+  fs_table <- fs_table %>% add_column(mfl_id = str_pad(fs_ids, 4, "left", "0"), .before = 1)
 
-  fs_table <- janitor::clean_names(fs_table)
+  fs_table <- janitor::clean_names(fs_table) %>%
+    clean_format() %>%  type_convert() %>%
+    rename(team=tm)
+
   structure(fs_table, source = "FantasySharks", season = season, week = week, position = position)
 }

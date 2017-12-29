@@ -30,7 +30,16 @@ offensive_columns <- function(tbl_columns){
     gsub(pattern = "Per", replacement = "per", ignore.case = TRUE, perl = TRUE) %>%
     gsub(pattern ="(pass|rush|rec)([[:alpha:]])", replacement = "\\1 \\2") %>%
     gsub(pattern ="ydsperatt", replacement = "avg") %>%
-    gsub(pattern ="comppct", replacement = "comp pct", ignore.case= TRUE)
+    gsub(pattern ="comppct", replacement = "comp pct", ignore.case= TRUE) %>%
+    gsub(pattern ="Return", replacement = "ret", ignore.case= TRUE)
 
   return(tbl_columns)
+}
+#' @export
+clean_format <- function(df){
+  formatted_num <- intersect(names(df), c("pass_yds", "rush_yds", "rec_yds"))
+  remove_format <- function(x)gsub("\\,", "", x)
+  if(length(formatted_num) > 0)
+    df <- df %>% mutate_at(formatted_num, remove_format)
+  return(df)
 }

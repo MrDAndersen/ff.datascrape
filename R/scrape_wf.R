@@ -1,10 +1,10 @@
 #' @export
 scrape_wf <- function(season = NULL){
 
-  wf_file <-  file.path(tempdir(), "wf.xlsx")
+  wf_file <-  tempfile("wf", fileext = ".xlsx")
 
   fname <- sprintf("http://walterfootball.com/fantasy%srankingsexcel.xlsx", as.character(season))
-  wd_dl <- download.file(fname, wf_file)
+  wd_dl <- download.file(fname, wf_file, mode = "wb")
 
   sheet_name <- c("QBs", "RBs", "WRs", "TEs", "Ks")
 
@@ -16,7 +16,11 @@ scrape_wf <- function(season = NULL){
   wf_data <- wf_data %>% select_if(remove_nacol)
   wf_data <- wf_data %>% select(-matches("\\.{2}|__|VBD|Points|POINTS"))
   wf_data <- wf_data %>% select(-one_of(c("Bonus", "Dynst", "QB", "BYE", "Bye",
-                                          sheet_name, "Tes", "Vmodes")))
+                                          intersect(names(wf_data), sheet_name),
+                                          "Tes", "Vmodes"))) %>%
+    rename(pass_tds = PASS.TD, pass_int = INT, rec = CATCH, reg_tds = REG.TD,
+           fg_0039 = FG.1.39, fg_4049 = FG.40.49, fg_50 = FG.50.) %>%
+    janitor::clean_names()
 
   structure(wf_data, source = "WalterFootball", season = season)
 

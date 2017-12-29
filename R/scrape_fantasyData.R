@@ -26,10 +26,50 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
   fd_table <- fd_page %>%
     html_node("table") %>% html_table()
 
+
   names(fd_table)[2:length(fd_table)] <- fd_page %>%
     html_nodes("table tr th a") %>%
     html_attr("href") %>%
-    gsub("(^.+','Sort\\$)(.+)('\\))", "\\2", .)
+    gsub("(^.+','Sort\\$)(.+)('\\))", "\\2", .) %>%
+    gsub("Fantasy*", "", ., ignore.case = TRUE)
+
+  fd_table <- fd_table %>% rename(rank = "Rk", fantasydata_id = "PlayerID",
+                                  player = "Name", pos = "Position")
+
+  if(position %in% c("QB", "RB", "WR", "TE")){
+    names(fd_table) <- offensive_columns(names(fd_table)) %>%
+      gsub("targets", "tgt", ., ignore.case = TRUE) %>%
+      gsub("ydsperrec", "avg", ., ignore.case = TRUE)
+
+    if(any(names(fd_table) %in% c( "Fumbles", "FumblesLost"))){
+      fd_table <- fd_table %>% rename(fumbles_tot = Fumbles, fumbles_lost = FumblesLost)
+    }
+
+  }
+
+  if(position == "K"){
+    names(fd_table) <- names(fd_table) %>%
+      gsub("FieldGoals*", "fg", ., ignore.case = TRUE) %>%
+      gsub("ExtraPoints", "xp", ., ignore.case = TRUE) %>%
+      gsub("Made", "", ., ignore.case = TRUE) %>%
+      gsub("Attempted*", "_att", ., ignore.case = TRUE) %>%
+      gsub("Longest*", "_long", ., ignore.case = TRUE) %>%
+      gsub("percentage*", "_pct", ., ignore.case = TRUE)
+  }
+
+  fd_table <- fd_table %>% janitor::clean_names()
+
+  if(position == "DST"){
+    fd_table <- fd_table %>% rename(
+      dst_TFL = "tacklesforloss", dst_sack = "sacks",
+      dst_qb_hits = "quarterbackhits", dst_int= "interceptions",
+      dst_fum_rec = "fumblesrecovered", dst_safety = "safeties",
+      dst_def_td = "defensivetouchdowns", dst_st_td = "specialteamstouchdowns",
+      dst_pts_allow = "pointsallowed"
+    )
+  }
+  fd_table <- fd_table %>% janitor::clean_names() %>%
+    clean_format() %>%  type_convert()
 
   structure(fd_table, source = "FantasyData", week = week, position = position)
 }

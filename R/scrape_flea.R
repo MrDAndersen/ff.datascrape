@@ -28,7 +28,7 @@ scrape_fleaflick <- function(
 
     names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$", "", names(flea_table)),
                                flea_table[1,]))
-    
+
     flea_table <- flea_table[-1,]
 
     flea_table <- flea_table %>% repair_names(prefix = "")
@@ -43,7 +43,7 @@ scrape_fleaflick <- function(
       names(flea_table) <- gsub("%", "Pct", names(flea_table))
       names(flea_table) <- gsub("Kicking\\s", "", names(flea_table))
     }
-    
+
     flea_table[, 1] <- gsub("^(Q|D|OUT|SUS|IR)([A-Z])", "\\2", flea_table[, 1])
 
     flea_table <- flea_table[1:(nrow(flea_table) - 1),]
@@ -58,8 +58,8 @@ scrape_fleaflick <- function(
       html_attr("href") %>%
       str_extract("[0-9]{3,}$")
 
-    flea_table <- flea_table %>% add_column(id = player_id, .before =1)
-    flea_table$id <- player_id
+    flea_table <- flea_table %>% add_column(fleaflicker_id = player_id, .before =1)
+
 
     flea_data <- bind_rows(flea_data, flea_table)
 
@@ -73,7 +73,59 @@ scrape_fleaflick <- function(
     flea_session <- flea_session %>% jump_to(next_url)
   })
 
-  structure(flea_data, source = "FleaFlicker", position = position)
+  names(flea_data) <- names(flea_data) %>%
+    gsub("Fantasy FPts", "Pts", .) %>%
+    gsub("Availability ", "", .) %>%
+    gsub("Week [0-9]+ ", "", .)
 
+  flea_data$Pts <- as.numeric(flea_data$Pts)
+
+  if(position %in% c("QB", "RB", "WR", "TE", "Flex")){
+    names(flea_data) <- names(flea_data) %>%
+      gsub("Rat$", "rate", .) %>%
+      gsub("%$", "comp_pct", .) %>%
+      gsub("Tar$", "tgt", .) %>%
+      gsub("Misc Fum", "fumbles lost", .) %>%
+      gsub("Misc", "Return", .) %>%
+      offensive_columns()
+  }
+
+  if(position == "DST"){
+    names(flea_data) <- names(flea_data) %>%
+      gsub("defense", "dst", ., ignore.case = TRUE) %>%
+      gsub("ff$", "fum_force", ., ignore.case = TRUE) %>%
+      gsub("fr$", "fum_rec", ., ignore.case = TRUE) %>%
+      gsub("ff$", "fum_force", ., ignore.case = TRUE) %>%
+      gsub("dst pts", "dst_pts_allow", ., ignore.case = TRUE) %>%
+      gsub("dst yd", "dst_yds_allow", ., ignore.case = TRUE)
+  }
+
+  if(position %in% c("DB", "DL", "LB", "IDP")){
+    names(flea_data) <- names(flea_data) %>%
+      gsub("defense", "idp", ., ignore.case = TRUE) %>%
+      gsub("ast$", "asst", ., ignore.case = TRUE) %>%
+      gsub("ff$", "fum_force", ., ignore.case = TRUE) %>%
+      gsub("fr$", "fum_rec", ., ignore.case = TRUE) %>%
+      gsub("ff$", "fum_force", ., ignore.case = TRUE)
+  }
+
+  flea_data <- janitor::clean_names(flea_data) %>%
+    clean_format() %>%  type_convert()
+
+  if(position == "QB"){
+    flea_data <- flea_data %>%
+      mutate(pass_comp_pct = sapply(pass_comp_pct, function(x)eval(parse(text=x)), USE.NAMES=FALSE))
+  }
+
+  if(position == "K"){
+    flea_data <- flea_data %>%
+      mutate(fg_pct = sapply(fg_pct, function(x)eval(parse(text=x)), USE.NAMES=FALSE),
+             xp_pct = sapply(xp_pct, function(x)eval(parse(text=x)), USE.NAMES=FALSE))
+  }
+
+  if(any(names(flea_data) =="fpts"))
+    flea_data$fpts <- as.numeric(flea_data$fpts)
+
+  structure(flea_data, source = "FleaFlicker", position = position)
 }
 

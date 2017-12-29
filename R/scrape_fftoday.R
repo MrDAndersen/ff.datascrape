@@ -74,11 +74,11 @@ scrape_fftoday <- function(
     player_id <- stringr::str_extract(player_links, "[0-9]{2,6}")
 
     if(length(player_id) == nrow(fft_table))
-      fft_table <- tibble::add_column(fft_table, id = player_id, .before = 1)
-    
+      fft_table <- tibble::add_column(fft_table, fftoday_id = player_id, .before = 1)
+
     if(!any(names(fft_table) == "Player"))
       fft_table <- fft_table %>% rename(Player = Team)
-    
+
     fft_table <- tibble::add_column(fft_table, Pos =  position, .after =  which(names(fft_table) == "Player"))
 
     fft_data <- dplyr::bind_rows(fft_data, fft_table)
@@ -91,9 +91,10 @@ scrape_fftoday <- function(
     fft_session <- rvest::jump_to(fft_session, next_url)
 
   })
-  
+
   if(position %in% c("QB", "RB", "WR", "TE"))
      names(fft_data) <- offensive_columns(names(fft_data))
+
   if(position == "K"){
     names(fft_data) <- names(fft_data) %>%
       gsub("^FG$", "FG Pct", .) %>%
@@ -103,22 +104,32 @@ scrape_fftoday <- function(
       gsub("^FGM$", "fg", .) %>%
       gsub("^FGA$", "fg att", .) %>%
       gsub("^XPM$", "xp", .) %>%
-      gsub("^XPA$", "xp att", .) 
+      gsub("^XPA$", "xp att", .)
   }
-  
+
   if(position == "DEF"){
     names(fft_data) <- names(fft_data) %>%
       gsub("(Sack|INT|Safety)", "dst \\1", .) %>%
       gsub("FR", "dst fum rec", .) %>%
-      gsub("DefTD", "dst tds", .) %>%
+      gsub("DefTD", "dst td", .) %>%
       gsub("PA", "dst pts_Allow", .) %>%
       gsub("PaYdG", "dst pass yds game", .) %>%
       gsub("RuYdG", "dst rush yds game", .) %>%
       gsub("KickTD", "dst kick ret td", .)
   }
-  
 
-  fft_data <- fft_data %>% janitor::clean_names()
+  if(position %in% c("DL", "LB", "DB")){
+    fft_data <- fft_data %>% rename(fum_force = "FF", fum_rec = "FR", solo = "Tackle", asst = "Assist")
+
+    names(fft_data) <- names(fft_data) %>%
+      gsub("(solo|asst|SACK|PD|int|fum_force|fum_rec)", "idp_\\1", ., ignore.case = TRUE ) %>%
+      gsub("Fantasy ", "", . , ignore.case = TRUE)
+  }
+
+
+  fft_data <- fft_data %>% janitor::clean_names() %>%
+    clean_format() %>%  type_convert()
+
   structure(fft_data, source = "FFToday", season = season, week = week, position = position)
 }
 

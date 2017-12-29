@@ -87,7 +87,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
       basename()
 
     if(length(player_id) > 0 )
-      yahoo_tbl <- yahoo_tbl %>% add_column(id = player_id, .before = 1)
+      yahoo_tbl <- yahoo_tbl %>% add_column(yahoo_id = player_id, .before = 1)
 
     yahoo_data <- bind_rows(yahoo_data, yahoo_tbl)
 
@@ -98,6 +98,63 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
     extract(., Yahoo_Player, c("Note", "Player", "Team", "Pos", "Status/Game/Opp"),
             "\\s*(.+Note[s]*)\\s+(.+)\\s([[:alpha:]]{2,3})\\s\\-\\s([[:alpha:]]{1,3},*[[:alpha:]]*)\\s{2,}(.+)") %>%
     select(., -one_of(c("Note", "Status/Game/Opp")))
+
+  names(yahoo_data) <- names(yahoo_data) %>%
+    gsub("Fantasy ", "", .) %>%
+    gsub("Rankings ", "", .) %>% gsub("GP", "Games", .)
+
+  if(position %in% c("O", "QB", "RB", "WR", "TE")){
+    names(yahoo_data) <- names(yahoo_data) %>%
+      gsub("YdTD", "Yd TD", .) %>% gsub("Yd TD", "TD", .) %>%
+      gsub("(40 Yd)\\s(Cmp|Att|TD|Rec)","\\1", . ) %>%
+      gsub("Misc 2PT", "two pts", .) %>%
+      gsub(" Downs", "", .) %>%
+      gsub("Passing Sack", "Sacks", .)  %>%
+      offensive_columns()
+  }
+
+  if(position == "K"){
+    names(yahoo_data) <- names(yahoo_data) %>%
+      gsub("Field Goals Made", "fg", .) %>%
+      gsub("Field Goals", "fg", .) %>%
+      gsub("PAT Made", "xp", .) %>%
+      gsub("PAT", "xp", .) %>%
+      gsub("Missed", "miss", .) %>%
+      gsub("([^0-9])([0-9])([^0-9])", "\\10\\2\\3", . ) %>%
+      gsub("\\-", "",.)
+  }
+
+  if(position == "DEF"){
+    def_cols <- c(dst_pts_allow = "Pts vs.",  dst_sack = "Tackles Sack",
+                  dst_safety = "Tackles Safe", dst_TFL = "Tackles TFL",
+                  dst_Int = "Turnovers Int",    dst_Fum_Rec = "Turnovers Fum Rec",
+                  dst_td = "TD TD",  dst_Blk = "Miscellaneous Blk Kick",
+                  dst_4_down = "Miscellaneous 4 Dwn Stops",
+                  dst_Yds_Allow = "Miscellaneous Yds Allow",
+                  dst_3_Out = "Miscellaneous 3 And Outs",
+                  dst_Return_Yds = "Return Yds",
+                  dst_Return_Tds = "Return TD")
+
+    rename_cols <- def_cols[which(def_cols %in% names(yahoo_data))]
+    yahoo_data <- yahoo_data %>% rename(!!!rename_cols)
+  }
+
+  if(position %in% c("D", "DB", "DL", "LB", "DT", "DE", "CB", "S")){
+    idp_cols <- c(idp_Ret_Yds = "Return Yds", idp_Ret_Tds = "Return TD",
+                  idp_Solo = "Tackles Tack Solo", idp_Asst = "Tackles Tack Ast",
+                  idp_TFL = "Tackles TFL",  idp_Sack = "Tackles Sack",
+                  idp_Safety = "Tackles Safe", idp_PD = "Misc Pass Def",
+                  idp_Blk = "Misc Blk Kick", idp_Int = "Turnovers Int",
+                  idp_Fum_Force = "Turnovers Fum Force",
+                  idp_Fum_Rec = "Turnovers Fum Rec", idp_Ret_Yds = "Turnovers Ret Yds",
+                  idp_TD = "TD TD")
+
+    rename_cols <- idp_cols[which(idp_cols %in% names(yahoo_data))]
+    yahoo_data <- yahoo_data %>% rename(!!!rename_cols)
+  }
+
+  yahoo_data <- janitor::clean_names(yahoo_data) %>%
+    clean_format() %>%  type_convert()
 
   structure(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week)
 }
