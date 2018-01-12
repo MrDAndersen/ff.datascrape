@@ -47,3 +47,14 @@ clean_format <- function(df){
 id_col <- function(x, match_col){
   player_ids$id[match(x, player_ids[[match_col]])]
 }
+
+current_season <- function(){
+  cur_year <- as.numeric(format(Sys.Date(), "%Y"))
+  cur_month <- as.numeric(format(Sys.Date(), "%m"))
+  
+  if(cur_month == 1)
+    return(cur_year - 1)
+  else
+    return(cur_year)
+  
+}

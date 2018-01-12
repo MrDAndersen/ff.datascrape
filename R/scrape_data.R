@@ -1,3 +1,5 @@
+#' Scrape data from multiple sources
+#' 
 #' @export
 scrape_data <- function(season = NULL, week = 0,
                         position = c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB"),
@@ -7,6 +9,9 @@ scrape_data <- function(season = NULL, week = 0,
 
   if(is.null(week))
     week <- 0
+  
+  if(is.null(season))
+    season <- current_season()
 
   season_only <- c("RTSports", "Walterfootball")
 

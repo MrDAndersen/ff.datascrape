@@ -1,17 +1,31 @@
+#' Scrape data from NFL
+#' 
+#' Use this function to srape fantasy football projections from NFL. This function
+#' is using the NFL Fantasy api.
+#' @param season The year that data will be scraped for. If omitted the current
+#' season will scraped.
+#' @param week The week that data will be scraped for. If \code{= 0} or omitted
+#' season data will be scraped.
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST" "DL", "LB", "DB")}. If omitted QB data will be scraped.
 #' @export
 scrape_nfl <- function(season = NULL, week = NULL,
-                       position = c("QB", "RB", "WR", "TE", "K" , "DEF", "DL", "LB", "DB")){
+                       position = c("QB", "RB", "WR", "TE", "K" , "DST", "DL", "LB", "DB")){
 
+  position <- match.arg(position)
+  
+  if(is.null(season)){
+    season <- current_season()
+  }
+  
   nfl_stats <- dplyr::bind_rows(
     lapply(httr::content(httr::GET("http://api.fantasy.nfl.com/v1/game/stats?format=json"))$stats,
            data.frame)
   )
 
-  position <- match.arg(position)
-
   nfl_base <- httr::build_url(httr::parse_url("http://api.fantasy.nfl.com/v1/players/stats"))
 
-  if(is.null(week)){
+  if(is.null(week) || week == 0){
     nfl_type <- "seasonProjectedStats"
   } else {
     nfl_type <- "weekProjectedStats"
@@ -22,14 +36,14 @@ scrape_nfl <- function(season = NULL, week = NULL,
   if(!is.null(season))
     nfl_qry$season <- season
 
-  if(!is.null(week)){
+  if(!is.null(week) && week != 0){
     week <- as.character(week)
     week <- match.arg(week, choices = 1:21)
     nfl_qry$week <- week
   }
 
   if(!is.null(position))
-    nfl_qry$position <- position
+    nfl_qry$position <- ifelse(position == "DST", "DEF", position)
 
   nfl_qry$format <- "json"
 
@@ -55,7 +69,6 @@ scrape_nfl <- function(season = NULL, week = NULL,
 
   nfl_data <- nfl_data %>%
     rename(player = "name", pos = "position", team = "teamAbbr", nfl_id = "id", games = "GP")
-
 
   if(position %in% c("QB", "RB", "WR", "TE")){
     names(nfl_data) <- names(nfl_data) %>%
@@ -88,7 +101,10 @@ scrape_nfl <- function(season = NULL, week = NULL,
   }
   nfl_data <- janitor::clean_names(nfl_data) %>%
     clean_format() %>%  type_convert()
-
+  
+  if(any(names(nfl_data) == "nfl_id"))
+    nfl_data <- nfl_data %>% add_column(id = id_col(espn_data$nfl_id, "nfl_id"), .before = 1)
+  
   structure(nfl_data, source = "NFL", season = season, week = week, position = position)
 }
 

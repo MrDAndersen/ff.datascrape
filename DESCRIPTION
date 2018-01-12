@@ -13,5 +13,6 @@ Depends:
     tidyverse,
     httr,
     rvest,
-    stringr, janitor
-RoxygenNote: 6.0.1
+    stringr,
+    janitor
+RoxygenNote: 5.0.1

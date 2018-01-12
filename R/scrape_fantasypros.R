@@ -1,13 +1,25 @@
+#' Scrape data from FantasyPros
+#' 
+#' Use this function to srape fantasy football projections from FantasyPros
+#' @param week The week that data will be scraped for. If omitted, season data 
+#' will be scraped.
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #' @export
-scrape_fantasypros <- function(season = NULL, week = NULL,
+scrape_fantasypros <- function(week = NULL,
                                position = c("QB", "RB", "WR", "TE", "K", "DST")){
 
+  position <- match.arg(position)
+  
   fp_url <- str_to_url(
     sprintf("https://www.fantasypros.com/nfl/projections/%s.php", tolower(position))
   )
 
-  if(is.null(week)){
+  if(is.null(week) || week == 0){
     fp_url <- modify_url(fp_url, query = list(week="draft"))
+  } else {
+    if(!(week %in% 1:21))
+      stop("When specifying a week please only use numbers between 1 and 21", call. = FALSE)
   }
 
   fp_session <- html_session(fp_url)
@@ -65,5 +77,8 @@ scrape_fantasypros <- function(season = NULL, week = NULL,
   fp_table <- janitor::clean_names(fp_table) %>%
     clean_format() %>%  type_convert()
 
-  structure(fp_table, source = "FantasyPros", season = season, week = week, position = position)
+  if(any(names(fp_table) == "fantasypro_id"))
+    fp_table <- fp_table %>% add_column(id = id_col(fp_table$fantasypro_id, "fantasypro_id"), .before = 1)
+  
+  structure(fp_table, source = "FantasyPros", season = current_season(), week = week, position = position)
 }

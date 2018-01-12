@@ -1,6 +1,17 @@
+#' Scrape data from WalterFootball
+#' 
+#' Use this function to srape fantasy football projections from WalterFootball Only
+#' seasonal projections are available.
+#' @param season The season to scrape data for. 
 #' @export
 scrape_wf <- function(season = NULL){
-
+  if(is.null(season))
+    season <- current_season()
+  
+  if(season > current_season()){
+    stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
+  }
+  
   wf_file <-  tempfile("wf", fileext = ".xlsx")
 
   fname <- sprintf("http://walterfootball.com/fantasy%srankingsexcel.xlsx", as.character(season))

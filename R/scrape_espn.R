@@ -1,16 +1,38 @@
+#' Scrape data from ESPN
+#' 
+#' Use this function to srape fantasy football projections from ESPN
+#' @param season The year that data will be scraped for
+#' @param week The week that data will be scraped for. If \code{= 0} or omitted
+#' season data will be scraped
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #' @import tidyverse httr rvest
 #' @export
-scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST", "K")){
+scrape_espn <- function(season, week = NULL, position = c("QB", "RB", "WR", "TE", "DST", "K")){
   espn_positions <- c("QB" = 0, "RB" = 2, "WR" = 4, "TE" = 6, "DST" = 16, "K" = 17)
   espn_base <- str_to_url("http://games.espn.com/ffl/tools/projections")
+  
+  position <- match.arg(position)
+
+  if(season > current_season()){
+    stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
+  }
+  
+  if(season < current_season()){
+    warning("Requesting data from before the ", current_season(), 
+            " may yield inaccurate data.", call. = FALSE)
+  }
+  
   espn_qry <- list(slotCategoryId = espn_positions[[position]])
 
-  if(week == 0){
+  if(is.null(week) || week == 0){
     espn_qry$seasonTotals <- "true"
   } else {
+    if(!(week %in% 1:17))
+      stop("When specifying a week please only use numbers between 1 and 17", call. = FALSE)
     espn_qry$scoringPeriodId <- week
   }
-
+  
   espn_qry$seasonId <- season
 
   espn_qry$startIndex <- 0
@@ -53,7 +75,6 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST"
                 "([0-9]+\\.*[0-9]*)/([0-9]+\\.*[0-9]*)")
     }
 
-
     espn_data <- bind_rows(espn_data, espn_tbl)
 
     next_url <- espn_page %>%
@@ -64,7 +85,6 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST"
       break
 
     espn_session <- espn_session %>% jump_to(next_url)
-
   })
 
   switch(position,
@@ -96,7 +116,6 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST"
          },
          names(espn_data) <- offensive_columns(names(espn_data))
   )
-
 
   espn_data <- espn_data %>% janitor::clean_names() %>%
     clean_format() %>%  type_convert()

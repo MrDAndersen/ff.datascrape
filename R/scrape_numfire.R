@@ -1,16 +1,24 @@
+#' Scrape data from NumberFire
+#' 
+#' Use this function to srape fantasy football projections from NumberFire
+#' @param week The week that data will be scraped for. If \code{= 0} or omitted
+#' season data will be scraped
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("Off", "QB", "RB", "WR", "TE", "RB/WR", "K", "DST", "IDP")}. If omitted 
+#' data for all offensive positions (QB, RB, WR, and TE) will be scraped. 
 #' @import tidyverse httr rvest
 #' @export
-scrape_numfire <- function(season = NULL, week = NULL,
-                           position = c("Off", "QB", "RB", "WR", "TE", "RB/WR", "K", "DEF", "IDP")){
-
-
+scrape_numfire <- function(week = NULL,
+                           position = c("Off", "QB", "RB", "WR", "TE", "RB/WR", "K", "DST", "IDP")){
+  position <- match.arg(position)
+  
   nmf_pos <- switch(position,
                     "Off" = "",
                     "RB/WR" = "rbwr",
-                    "DEF" = "d",
+                    "DST" = "d",
                     tolower(position))
 
-  if(is.null(week)){
+  if(is.null(week) || week == 0){
     nmf_path <-  "remaining-projections"
   } else{
     nmf_path <- "fantasy-football-projections"
@@ -43,10 +51,10 @@ scrape_numfire <- function(season = NULL, week = NULL,
 
   nmf_player_table <- nmf_player_table %>% add_column(numberfire_id = nmf_ids, .before = -1)
 
-  if(position == "DEF"){
+  if(position == "DST"){
     nmf_player_table$Player <- trimws(gsub("D/ST", "", nmf_player_table$Player))
     nmf_player_table$`Abbr Name` <- NULL
-    nmf_player_table$Pos <- "DEF"
+    nmf_player_table$Pos <- "DST"
   }
 
   nmf_stat_table <- html_table(nmf_tables[[2]])
@@ -74,7 +82,7 @@ scrape_numfire <- function(season = NULL, week = NULL,
     names(nmf_data) <- offensive_columns(names(nmf_data))
   }
 
-  if(position == "DEF"){
+  if(position == "DST"){
     names(nmf_data) <-names(nmf_data) %>%
       gsub("defense", "dst", ., ignore.case = TRUE) %>%
       gsub("yards", "yds", ., ignore.case = TRUE) %>%
@@ -99,6 +107,7 @@ scrape_numfire <- function(season = NULL, week = NULL,
 
   if(any(names(nmf_data) == "numberfire_id"))
     nmf_data <- nmf_data %>% add_column(id = id_col(nmf_data$numberfire_id, "numfire_id"), .before = -1)
-  structure(data.frame(nmf_data), source = "NumberFire", season = season,
+  
+  structure(data.frame(nmf_data), source = "NumberFire", season = current_season(),
             week = week, position = position)
 }

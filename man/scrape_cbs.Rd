@@ -14,8 +14,9 @@ season data will be scraped}
 \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.}
 }
 \value{
-A \link{data.table} with results from the scrape.
+A data frame with results from the scrape.
 }
 \description{
 Use this function to scrape fantasy football projections from CBS.
 }
+

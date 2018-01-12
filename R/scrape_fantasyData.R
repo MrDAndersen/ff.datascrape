@@ -1,8 +1,17 @@
+#' Scrape data from FantasyData
+#' 
+#' Use this function to srape fantasy football projections from FantasyData
+#' @param week The week that data will be scraped for. If omitted, season data 
+#' will be scraped.
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #' @export
 scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "K", "DST")){
 
   fd_positions = c("QB" = 1, "RB" = 2, "WR" = 3, "TE"= 4, "K" = 5, "DST"= 6)
 
+  position <- match.arg(position)
+  
   fd_base <- str_to_url("https://fantasydata.com/nfl-stats/fantasy-football-weekly-projections.aspx")
 
 
@@ -11,6 +20,9 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
                  pid="true", minsnaps=4)
 
   if(week > 0){
+    if(!(week %in% 1:17))
+      stop("When specifying a week please only use numbers between 1 and 17", call. = FALSE)
+    
     fd_qry$w <- week
     fd_qry$ew <- week
     fd_qry$scope <- 1
@@ -28,14 +40,12 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
 
   fd_url <- modify_url(fd_base, query = fd_qry)
 
-
   fd_session <- html_session(fd_url)
 
   fd_page <- read_html(fd_session)
 
   fd_table <- fd_page %>%
     html_node("table") %>% html_table()
-
 
   names(fd_table)[2:length(fd_table)] <- fd_page %>%
     html_nodes("table tr th a") %>%

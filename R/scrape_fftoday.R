@@ -1,13 +1,22 @@
 #' Scrape data from FFToday
 #'
+#' Use this function to srape fantasy football projections from FFToday
+#' @param season The year that data will be scraped for. If ommitted the current 
+#' season will be used
+#' @param week The week that data will be scraped for. If \code{= 0} or omitted
+#' season data will be scraped
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")}. If omitted QB 
+#' data will be scraped. Note that weekly data for DST and IDP positions are not 
+#' available. 
 #' @export
 scrape_fftoday <- function(
   season = NULL, week = NULL,
-  position = c("QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB")
+  position = c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")
 )
 {
   fft_positions <- c(QB = 10, RB = 20, WR = 30, TE = 40, K = 80,
-                     DEF = 99, DL = 50, LB = 60, DB =70)
+                     DST = 99, DL = 50, LB = 60, DB =70)
 
   position <- match.arg(position)
 
@@ -15,21 +24,19 @@ scrape_fftoday <- function(
     httr::parse_url("http://www.fftoday.com/rankings/")
   )
 
-  if(is.null(week) & is.null(season))
-    stop("Please provide season and/or week to scrape for", call. = FALSE)
+  if(is.null(season))
+    season <- current_season()
 
-  if(!is.null(week) & is.null(season))
-    stop("Please provide season for which to scrape the weekly data for", call. = FALSE)
+  if(!is.null(week) && week != 0){
+    if(!(week %in% 1:21))
+      stop("When specifying a week please only use numbers between 1 and 21", call. = FALSE)
+  } 
 
-
-  if(!is.null(week)){
-    week <- as.character(week)
-    week <- match.arg(week, choices = 1:21)
+  if(season > current_season()){
+    stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
   }
-
-
+  
   fft_qry <- list(Season = season)
-
 
   fft_file <- as.character()
 
@@ -42,10 +49,9 @@ scrape_fftoday <- function(
               "\tTable is empty.")
   }
 
-
   fft_path <- paste0(httr::parse_url(fft_base)$path, fft_file)
 
-  if(!is.null(week))
+  if(!is.null(week) && week > 0)
     fft_qry$GameWeek <- week + ifelse(week > 17, 3, 0)
 
   fft_qry$LeagueID <- 1
@@ -108,7 +114,7 @@ scrape_fftoday <- function(
       gsub("^XPA$", "xp att", .)
   }
 
-  if(position == "DEF"){
+  if(position == "DST"){
     names(fft_data) <- names(fft_data) %>%
       gsub("(Sack|INT|Safety)", "dst \\1", .) %>%
       gsub("FR", "dst fum rec", .) %>%
@@ -131,6 +137,9 @@ scrape_fftoday <- function(
   fft_data <- fft_data %>% janitor::clean_names() %>%
     clean_format() %>%  type_convert()
 
+  if(any(names(fft_data) == "fftoday_id"))
+    fft_data <- fft_data %>% add_column(id = id_col(fft_data$fftoday_id, "fftoday_id"), .before = 1)
+  
   structure(fft_data, source = "FFToday", season = season, week = week, position = position)
 }
 

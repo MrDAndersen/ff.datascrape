@@ -6,22 +6,22 @@
 #' @param position The player position to scrape data for. Has to be one of
 #' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #'
-#' @return A \link{data.table} with results from the scrape.
+#' @return A data frame with results from the scrape.
 #' @import tidyverse rvest httr stringr
 #' @export
 scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "DST")){
-
-  if(is.null(week))
-    week <- 0
 
   position <- match.arg(position)
 
   cbs_base <- str_to_url("https://www.cbssports.com/fantasy/football/stats/weeklyprojections/")
   cbs_qry = list(print_rows = 9999)
 
-  if(week == 0){
+  if(is.null(week) || week == 0){
     cbs_path <- paste(position, "season/avg/standard", sep = "/")
   } else {
+    if(!(week %in% 1:21))
+      stop("When specifying a week please only use numbers between 1 and 21", call. = FALSE)
+    
     cbs_path <- paste(position, week, "avg/standard", sep  = "/")
   }
 
@@ -29,7 +29,6 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
 
   cbs_session <- html_session(cbs_url)
   cbs_page <- read_html(cbs_session)
-
 
   html_nodes(cbs_page, "table")
   cbs_table <- html_table(html_node(cbs_page, "table"), fill = TRUE, header = TRUE)
@@ -47,7 +46,6 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
   test_func <- function(x)!as.logical(length(unlist(regmatches(x, regexec("Pages", x)))))
 
   row_test <- sapply(test_col, test_func, USE.NAMES = FALSE)
-
 
   cbs_table <- cbs_table[row_test,]
 

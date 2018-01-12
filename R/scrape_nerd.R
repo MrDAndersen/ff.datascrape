@@ -1,10 +1,30 @@
+#' Scrape data from FantasyFootballNerd
+#' 
+#' Use this function to srape fantasy football projections from FantasyFootballNerd.
+#' The function uses the FantasyFootball Nerd API. If you don't have an API key
+#' to use for this you will not get accuracte results. You can register for an
+#' API key at fantasyfootballnerd.com. 
+#' You set the API key for this scrape via \code{options('ffdata.ffn_api' = 'apikey')}
+#' @param week The week that data will be scraped for. If \code{= 0} or omitted
+#' season data will be scraped
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #' @export
-scrape_fantasynerd <- function(season = NULL, week = NULL,
-                               position = c("QB", "RB", "WR", "TE", "K", "DEF")){
+scrape_fantasynerd <- function(week = NULL,
+                               position = c("QB", "RB", "WR", "TE", "K", "DST")){
 
-  data_type <- ifelse(is.null(week), "draft", "weekly")
-  week_no <- ifelse(is.null(week), "", as.character(week))
-  json_elem <- ifelse(is.null(week), "DraftProjections", "Projections")
+  if(is.null(week))
+    week <- 0
+  
+  position <- match.arg(position)
+  
+  if(week != 0 & !(week %in% 1:17)){
+    stop("When specifying a week please only use numbers between 1 and 17", call. = FALSE)
+  }
+  
+  data_type <- ifelse(week = 0, "draft", "weekly")
+  week_no <- ifelse(week == 0, "", as.character(week))
+  json_elem <- ifelse(week = 0, "DraftProjections", "Projections")
 
   ffn_key <- getOption("ffdata.ffn_api")
 
@@ -14,7 +34,7 @@ scrape_fantasynerd <- function(season = NULL, week = NULL,
   }
   ffn_url <- sprintf(
     "http://www.fantasyfootballnerd.com/service/%s-projections/json/%s/%s/%s",
-    data_type, ffn_key, position, week_no
+    data_type, ffn_key, ifelse(position == "DST", "DEF", position), week_no
   )
 
   ffn_data <- httr::content(httr::GET(ffn_url))
@@ -38,7 +58,10 @@ scrape_fantasynerd <- function(season = NULL, week = NULL,
   ffn_table <- janitor::clean_names(ffn_table) %>%
     clean_format() %>%  type_convert()
 
-  structure(ffn_table, source = "FantasyFootballNerd", season = season, week = week,
-            position = position)
+  if(any(names(ffn_table) == "fantasynerd_id"))
+    ffn_table <- ffn_table %>% add_column(id = id_col(ffn_table$fantasynerd_id, "fantasynerd_id"), .before = 1)
+  
+  structure(ffn_table, source = "FantasyFootballNerd", season = current_season(), 
+            week = week, position = position)
 }
 

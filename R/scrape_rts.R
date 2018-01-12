@@ -1,12 +1,16 @@
+#' Scrape data from RTSports
+#' 
+#' Use this function to srape fantasy football projections from RTSports. Only
+#' seasonal projections are available.
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #' @export
 scrape_rts <- function(position = c("QB", "RB", "WR", "TE", "K", "DST")){
-
+  position <- match.arg(position)
   p <- c(QB = 0, RB = 1, WR = 2, TE = 3, K = 4, DST = 5)
   rts_url <-paste0("https://www.freedraftguide.com/football/draft-guide-rankings-provider.php?POS=", p[position])
 
   rts_list <- httr::content(httr::GET(rts_url))
-
-
 
   rts_data  <- dplyr::bind_rows(lapply(rts_list$player_list,
                                        function(pl)dplyr::bind_cols(
@@ -38,6 +42,9 @@ scrape_rts <- function(position = c("QB", "RB", "WR", "TE", "K", "DST")){
   if(position %in% c("QB", "RB", "WR", "TE"))
     names(rts_data) <- names(rts_data) %>% offensive_columns()
 
+  if(any(names(rts_data) == "stats_id"))
+    rts_data <- rts_data %>% add_column(id = id_col(rts_data$stats_id, "stats_id"), .before = 1)
+  
   structure(rts_data, source = "RTSports", position = position)
 }
 

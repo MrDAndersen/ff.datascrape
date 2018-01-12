@@ -1,30 +1,50 @@
+#' Scrape data from Yahoo
+#' 
+#' Use this function to scrape fantasy football projections from Yahoo Sports. 
+#' To use this function you will have to set up a Yahoo Sports fantasy league and
+#' specify the league id in the options with \code{options('ffdata.yahoo_league'='leagueid')}
+#' @param stat_type The projection type requested. Has to be one of 
+#' \code{c("Projected",  "Actual", "Remaining Season", "Next 4 weeks", "Last 4 Weeks", "Avg Last 4 Weeks")}.
+#' If omitted then Projected stats will be scraped
+#' @param position The player position to scrape data for. Has to be one of
+#' \code{c("O", "DP", "QB", "RB", "WR", "TE", "K", "DST", "D", "DB", "DL", "LB", "DT", "DE", "CB", "S")}. 
+#' If omitted data for all offensive positions (QB, RB, WR, and TE) will be scraped. 
+#' @param season The year data should be scraped for. If omitted the current season
+#' data will be scraped.
+#' @param week The week that data will be scraped for. If omitted, season data 
+#' will be scraped.
 #' @import httr tidyverse rvest
 #' @export
 scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season",
                                        "Next 4 weeks", "Last 4 Weeks", "Avg Last 4 Weeks" ),
-                         position = c("O", "DP", "QB", "RB", "WR", "TE", "K", "DEF",
+                         position = c("O", "DP", "QB", "RB", "WR", "TE", "K", "DST",
                                       "D", "DB", "DL", "LB", "DT", "DE", "CB", "S"),
                          season = NULL, week = NULL){
 
-  if(!missing(week)){
-    week <- as.character(week)
-    week = match.arg(week, choices = 1:17)
-  }
-  if(missing(position))
-    stop("Please provide position to scrape for", call. = FALSE )
-
+  
   position <- match.arg(position)
-
+  stat_type <- match.arg(stat_type)
+  
+  if(is.null(season))
+    season <- current_season()
+  
+  if(season > current_season()){
+    stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
+  }
+  
+  if(!is.null(week) && week != 0){
+    if(!(week %in% 1:17))
+      stop("When specifying a week please only use numbers between 1 and 17", call. = FALSE)
+  }
+  
   league_id <- getOption("ffdata.yahoo_league")
   if(is.null(league_id))
     stop("Yahoo League ID is not set. Please set yahoo league ID with options('ffdata.yahoo_league'='leagueid')", call. = FALSE )
 
-  if(is.null(season) & is.null(week))
-    stop("Please supply either week number or season", call. = FALSE)
 
   yahoo_base <- str_to_url("https://football.fantasysports.yahoo.com/f1/")
 
-  yahoo_qry <- list(sort = "PTS", sdir = "1", status = "A", pos = position,
+  yahoo_qry <- list(sort = "PTS", sdir = "1", status = "A", pos = ifelse(position == "DST", "DEF", position),
                     stat1 = "", jsenabled = 1, count = 0)
 
   yahoo_qry$stat1 <- switch(
@@ -156,5 +176,8 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
   yahoo_data <- janitor::clean_names(yahoo_data) %>%
     clean_format() %>%  type_convert()
 
+  if(any(names(yahoo_data) == "yahoo_id"))
+    yahoo_data <- yahoo_data %>% add_column(id = id_col(yahoo_data$yahoo_id, "stats_id"), .before = 1)
+  
   structure(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week, position = position)
 }
