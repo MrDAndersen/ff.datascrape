@@ -79,7 +79,9 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST"
              separate("FG 4049", c("FG 4049", "FG ATT 4049"), sep ="/") %>%
              separate("FG 50", c("FG 50", "FG ATT 50"), sep ="/") %>%
              separate("FG TOT", c("FG", "FG ATT"), sep ="/") %>%
-             separate("XP", c("XP", "XP ATT"), sep ="/")
+             separate("XP", c("XP", "XP ATT"), sep ="/") %>%
+             rename(espn_id = espnid)
+
          },
          "DST" = {
            names(espn_data) <- names(espn_data) %>%
@@ -98,6 +100,9 @@ scrape_espn <- function(season, week, position = c("QB", "RB", "WR", "TE", "DST"
 
   espn_data <- espn_data %>% janitor::clean_names() %>%
     clean_format() %>%  type_convert()
+
+  if(any(names(espn_data) == "espn_id"))
+    espn_data <- espn_data %>% add_column(id = id_col(espn_data$espn_id, "espn_id"), .before = 1)
 
   structure(espn_data, source = "ESPN", season = season, week = week, position = position)
 }

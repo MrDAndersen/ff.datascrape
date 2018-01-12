@@ -1,6 +1,6 @@
 
 #' @export
-scrape_fleaflick <- function(
+scrape_fleaflick <- function(week = NULL,
   position = c("QB", "RB", "WR", "TE", "Flex", "K", "DST", "DB", "DL", "LB", "IDP")
   )
 {
@@ -8,7 +8,8 @@ scrape_fleaflick <- function(
                      "DST" = 256, "DB" = 32, "DL" = 64, "LB" = 128, "IDP" = 224)
 
   flea_base <- str_to_url("https://www.fleaflicker.com/nfl/leaders")
-  flea_qry <- list(statType = 7, sortMode = 1)
+  sort_mode <- ifelse(week <18, 1, 7)
+  flea_qry <- list(statType = 7, sortMode = sort_mode)
 
   flea_qry$position <- flea_positions[[position]]
   flea_qry$tableOffset <- 0
@@ -26,7 +27,7 @@ scrape_fleaflick <- function(
       html_node("#body-center-main table") %>%
       html_table()
 
-    names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$", "", names(flea_table)),
+    names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$|Wild Card$", "", names(flea_table)),
                                flea_table[1,]))
 
     flea_table <- flea_table[-1,]
@@ -46,12 +47,15 @@ scrape_fleaflick <- function(
 
     flea_table[, 1] <- gsub("^(Q|D|OUT|SUS|IR)([A-Z])", "\\2", flea_table[, 1])
 
-    flea_table <- flea_table[1:(nrow(flea_table) - 1),]
+
+    if(length(grep( "Next", flea_table[,1]) >0))
+      flea_table <- flea_table[1:(nrow(flea_table) - 1),]
 
     flea_table <- flea_table %>%
       extract("Player Name", c("Player", "Pos", "Team", "Bye"),
               "([A-Za-z0-9'-.\\s]+)\\s([QRWTDKL][BRESL/]*[SFT]*[T]*)\\s([ABCDFGHIJKLMNOPSTW][ACIOUHFTELNYBR][TLCFIUSRNEDGJKA]*)\\s*\\(*([0-9]*)\\)*"
       )
+
 
     player_id <- flea_page %>%
       html_nodes("a.player-text") %>%
@@ -59,7 +63,6 @@ scrape_fleaflick <- function(
       str_extract("[0-9]{3,}$")
 
     flea_table <- flea_table %>% add_column(fleaflicker_id = player_id, .before =1)
-
 
     flea_data <- bind_rows(flea_data, flea_table)
 

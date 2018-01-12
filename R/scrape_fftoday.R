@@ -27,6 +27,7 @@ scrape_fftoday <- function(
     week <- match.arg(week, choices = 1:21)
   }
 
+
   fft_qry <- list(Season = season)
 
 
@@ -45,7 +46,7 @@ scrape_fftoday <- function(
   fft_path <- paste0(httr::parse_url(fft_base)$path, fft_file)
 
   if(!is.null(week))
-    fft_qry$GameWeek <- week
+    fft_qry$GameWeek <- week + ifelse(week > 17, 3, 0)
 
   fft_qry$LeagueID <- 1
   fft_qry$PosID <- fft_positions[[position]]

@@ -97,6 +97,8 @@ scrape_numfire <- function(season = NULL, week = NULL,
   nmf_data <- janitor::clean_names(nmf_data) %>%
     clean_format() %>%  type_convert()
 
+  if(any(names(nmf_data) == "numberfire_id"))
+    nmf_data <- nmf_data %>% add_column(id = id_col(nmf_data$numberfire_id, "numfire_id"), .before = -1)
   structure(data.frame(nmf_data), source = "NumberFire", season = season,
             week = week, position = position)
 }

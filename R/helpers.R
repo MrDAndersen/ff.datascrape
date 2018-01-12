@@ -43,3 +43,7 @@ clean_format <- function(df){
     df <- df %>% mutate_at(formatted_num, remove_format)
   return(df)
 }
+
+id_col <- function(x, match_col){
+  player_ids$id[match(x, player_ids[[match_col]])]
+}

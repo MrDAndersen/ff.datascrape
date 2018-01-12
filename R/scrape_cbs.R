@@ -55,13 +55,13 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
     html_nodes("table a[href *= 'playerpage']") %>%
     html_attr("href")
 
-  player_ids <- player_links %>% str_extract("[0-9]{3,6}")
+  pids <- player_links %>% str_extract("[0-9]{3,8}")
 
   cbs_table <- cbs_table %>%
     extract("Player", c("Player", "Team"), "([A-Za-z'-. ]+),\\s([A-Za-z]+)")
 
-  if(length(player_ids) == nrow(cbs_table)){
-    cbs_table <- cbs_table %>% add_column(cbs_id = player_ids, .before = 1)
+  if(length(pids) == nrow(cbs_table)){
+    cbs_table <- cbs_table %>% add_column(cbs_id = pids, .before = 1)
   }
 
   cbs_table <- cbs_table %>% add_column(Pos = position, .before = "Team")
@@ -89,6 +89,9 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
 
   cbs_table <- cbs_table %>% janitor::clean_names() %>%
     clean_format() %>%  type_convert()
+
+  if(any(names(cbs_table) == "cbs_id"))
+    cbs_table <- cbs_table %>% add_column(id = id_col(cbs_table$cbs_id, "cbs_id"), .before = 1)
 
   structure(cbs_table, source = "CBS", week = week)
 }

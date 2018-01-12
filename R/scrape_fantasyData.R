@@ -5,6 +5,7 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
 
   fd_base <- str_to_url("https://fantasydata.com/nfl-stats/fantasy-football-weekly-projections.aspx")
 
+
   fd_qry <- list(fs = 0, stype = 0, sn = 0, scope = 1, w = -1, ew = -1, s = "",
                  t = 0, p = 9, st="FantasyPoints", d = 1, ls = "", live="false",
                  pid="true", minsnaps=4)
@@ -12,6 +13,15 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
   if(week > 0){
     fd_qry$w <- week
     fd_qry$ew <- week
+    fd_qry$scope <- 1
+
+    fd_qry$stype <- ifelse(week > 17, 1, 0)
+  } else {
+    fd_qry$scope <- 0
+    fd_qry$stype <- 0
+    fd_qry$w <- 0
+    fd_qry$ew <- 0
+
   }
 
   fd_qry$p <- fd_positions[[position]]
@@ -70,6 +80,9 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
   }
   fd_table <- fd_table %>% janitor::clean_names() %>%
     clean_format() %>%  type_convert()
+
+  if(any(names(fd_table) == "fantasydata_id"))
+    fd_table <- fd_table %>% add_column(id = id_col(fd_table$fantasydata_id, "fantasydata_id"), .before = 1)
 
   structure(fd_table, source = "FantasyData", week = week, position = position)
 }

@@ -4,8 +4,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
                                        "Next 4 weeks", "Last 4 Weeks", "Avg Last 4 Weeks" ),
                          position = c("O", "DP", "QB", "RB", "WR", "TE", "K", "DEF",
                                       "D", "DB", "DL", "LB", "DT", "DE", "CB", "S"),
-                         season = NULL, week = NULL,
-                         league_id = NULL){
+                         season = NULL, week = NULL){
 
   if(!missing(week)){
     week <- as.character(week)
@@ -16,8 +15,9 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
 
   position <- match.arg(position)
 
-  if(missing(league_id))
-    stop("Please provide your Yahoo League ID", call. = FALSE )
+  league_id <- getOption("ffdata.yahoo_league")
+  if(is.null(league_id))
+    stop("Yahoo League ID is not set. Please set yahoo league ID with options('ffdata.yahoo_league'='leagueid')", call. = FALSE )
 
   if(is.null(season) & is.null(week))
     stop("Please supply either week number or season", call. = FALSE)
@@ -156,5 +156,5 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
   yahoo_data <- janitor::clean_names(yahoo_data) %>%
     clean_format() %>%  type_convert()
 
-  structure(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week)
+  structure(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week, position = position)
 }
