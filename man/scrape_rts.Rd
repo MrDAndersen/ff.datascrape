@@ -14,4 +14,3 @@ scrape_rts(position = c("QB", "RB", "WR", "TE", "K", "DST"))
 Use this function to srape fantasy football projections from RTSports. Only
 seasonal projections are available.
 }
-

@@ -18,4 +18,3 @@ data for all offensive positions (QB, RB, WR, and TE) will be scraped.}
 \description{
 Use this function to srape fantasy football projections from NumberFire
 }
-

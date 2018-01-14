@@ -21,7 +21,7 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
   } else {
     if(!(week %in% 1:21))
       stop("When specifying a week please only use numbers between 1 and 21", call. = FALSE)
-    
+
     cbs_path <- paste(position, week, "avg/standard", sep  = "/")
   }
 
@@ -61,6 +61,10 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
   if(length(pids) == nrow(cbs_table)){
     cbs_table <- cbs_table %>% add_column(cbs_id = pids, .before = 1)
   }
+
+  print(names(cbs_table))
+  if(position == "DST")
+    cbs_table <- cbs_table %>% rowwise() %>% mutate(cbs_id = cbs_def_id[which(cbs_def == Team)])
 
   cbs_table <- cbs_table %>% add_column(Pos = position, .before = "Team")
 

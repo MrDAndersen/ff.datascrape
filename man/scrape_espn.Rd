@@ -19,4 +19,3 @@ season data will be scraped}
 \description{
 Use this function to srape fantasy football projections from ESPN
 }
-

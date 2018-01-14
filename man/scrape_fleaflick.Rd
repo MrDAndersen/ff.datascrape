@@ -8,15 +8,14 @@ scrape_fleaflick(week = NULL, position = c("QB", "RB", "WR", "TE", "Flex",
   "K", "DST", "DB", "DL", "LB", "IDP"))
 }
 \arguments{
-\item{week}{The week that data will be scraped for. If omitted, season data 
+\item{week}{The week that data will be scraped for. If omitted, season data
 will be scraped.}
 
 \item{position}{The player position to scrape data for. Has to be one of
-\code{c("QB", "RB", "WR", "TE", "Flex", "K", "DST", "DB", "DL", "LB", "IDP")}. 
-If omitted QB data will be scraped. Specifying \code{"Flex"} will scrape RB, 
+\code{c("QB", "RB", "WR", "TE", "Flex", "K", "DST", "DB", "DL", "LB", "IDP")}.
+If omitted QB data will be scraped. Specifying \code{"Flex"} will scrape RB,
 WR, and TE data. Specifying \code{"IDP"} will scrape DB, DL, and LB data.}
 }
 \description{
 Use this function to srape fantasy football projections from FleaFlicker
 }
-

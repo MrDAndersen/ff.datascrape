@@ -13,4 +13,3 @@ scrape_wf(season = NULL)
 Use this function to srape fantasy football projections from WalterFootball Only
 seasonal projections are available.
 }
-

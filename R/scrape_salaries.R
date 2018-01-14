@@ -1,7 +1,13 @@
+#' Retrieve salaries for a specific site
+#'
+#' This function retrieves the player salaries for a site.
+#' @param site Specifies the site to retrieve salaries from. Should be one of
+#' \code{c("fanduel", "draftkings", "yahoo", "fantasydraft", "fantasyscore")}.
+#' If ommited then FanDuel salaries will be scraped.
+#' @return A \link{data.frame} with salary data.
 #' @export
 get_salaries <- function(site =  c("fanduel", "draftkings", "yahoo", "fantasydraft", "fantasyscore")){
   site <- match.arg(site)
-  # url
 
   if(site != "fantasyscore"){
     salary_url <- paste("https://www.fantasypros.com/daily-fantasy/nfl/",
@@ -22,6 +28,7 @@ get_salaries <- function(site =  c("fanduel", "draftkings", "yahoo", "fantasydra
 
     salary_table <- salary_table %>% add_column(fantasypro_id = player_ids, .before = 1)
 
+    salary_table <- salary_table %>% add_column(id = id_col(salary_table$fantasypro_id, "fantasypro_id"), .before = 1)
   } else {
     salary_url <- "https://www.rtsports.com/daily/salaries/football"
 

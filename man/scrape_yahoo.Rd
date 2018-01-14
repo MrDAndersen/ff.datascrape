@@ -10,23 +10,22 @@ scrape_yahoo(stat_type = c("Projected", "Actual", "Remaining Season",
   "S"), season = NULL, week = NULL)
 }
 \arguments{
-\item{stat_type}{The projection type requested. Has to be one of 
+\item{stat_type}{The projection type requested. Has to be one of
 \code{c("Projected",  "Actual", "Remaining Season", "Next 4 weeks", "Last 4 Weeks", "Avg Last 4 Weeks")}.
 If omitted then Projected stats will be scraped}
 
 \item{position}{The player position to scrape data for. Has to be one of
-\code{c("O", "DP", "QB", "RB", "WR", "TE", "K", "DST", "D", "DB", "DL", "LB", "DT", "DE", "CB", "S")}. 
+\code{c("O", "DP", "QB", "RB", "WR", "TE", "K", "DST", "D", "DB", "DL", "LB", "DT", "DE", "CB", "S")}.
 If omitted data for all offensive positions (QB, RB, WR, and TE) will be scraped.}
 
 \item{season}{The year data should be scraped for. If omitted the current season
 data will be scraped.}
 
-\item{week}{The week that data will be scraped for. If omitted, season data 
+\item{week}{The week that data will be scraped for. If omitted, season data
 will be scraped.}
 }
 \description{
-Use this function to scrape fantasy football projections from Yahoo Sports. 
+Use this function to scrape fantasy football projections from Yahoo Sports.
 To use this function you will have to set up a Yahoo Sports fantasy league and
 specify the league id in the options with \code{options('ffdata.yahoo_league'='leagueid')}
 }
-

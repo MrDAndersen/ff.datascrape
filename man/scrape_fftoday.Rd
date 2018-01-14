@@ -22,4 +22,3 @@ available.}
 \description{
 Use this function to srape fantasy football projections from FFToday
 }
-

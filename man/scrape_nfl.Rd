@@ -21,4 +21,3 @@ season data will be scraped.}
 Use this function to srape fantasy football projections from NFL. This function
 is using the NFL Fantasy api.
 }
-

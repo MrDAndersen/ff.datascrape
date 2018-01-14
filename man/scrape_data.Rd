@@ -9,7 +9,33 @@ scrape_data(season = NULL, week = 0, position = c("QB", "RB", "WR", "TE",
   "FantasyData", "FantasyPros", "FantasySharks", "FFToday", "FleaFlicker",
   "NFL", "NumberFire", "RTSports", "Walterfootball"))
 }
-\description{
-Scrape data from multiple sources
-}
+\arguments{
+\item{season}{The season data should be scraped for. If omitted then current
+season will be scraped}
 
+\item{week}{The week data should be scraped for. If omitted the season data will
+be scraped}
+
+\item{position}{The position(s) to scrape for. Select positions from:
+\code{c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")}. Multiple
+postions are allowed.}
+
+\item{sources}{The sources to scrape for. Select sources from
+\code{c("CBS", "Yahoo", "ESPN", "FantasyData", "FantasyPros", "FantasySharks",
+"FFToday", "FleaFlicker", "NFL","NumberFire", "RTSports", "Walterfootball")}.
+Multiple sources are allowed.}
+}
+\value{
+A list with one data.frame by position.
+}
+\description{
+This function will scrape data from multiple sources.
+\describe{
+   \item{Season data: }{CBS, Yahoo, ESPN, FantasyData, FantasyPros,
+   FantasySharks, FFToday, FleaFlicker, NFL, NumberFire, RTSports, Walterfootball}
+   \item{Weekly data (regular seson): }{CBS, Yahoo, ESPN, FantasyData, FantasyPros,
+   FantasySharks, FFToday, FleaFlicker, NFL, NumberFire}
+   \item{Weekly data (post seson): }{CBS, FantasyData, FantasyPros,
+   FantasySharks, FFToday, FleaFlicker, NumberFire}
+}
+}

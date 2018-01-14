@@ -1,17 +1,17 @@
 #' Scrape data from Yahoo
-#' 
-#' Use this function to scrape fantasy football projections from Yahoo Sports. 
+#'
+#' Use this function to scrape fantasy football projections from Yahoo Sports.
 #' To use this function you will have to set up a Yahoo Sports fantasy league and
 #' specify the league id in the options with \code{options('ffdata.yahoo_league'='leagueid')}
-#' @param stat_type The projection type requested. Has to be one of 
+#' @param stat_type The projection type requested. Has to be one of
 #' \code{c("Projected",  "Actual", "Remaining Season", "Next 4 weeks", "Last 4 Weeks", "Avg Last 4 Weeks")}.
 #' If omitted then Projected stats will be scraped
 #' @param position The player position to scrape data for. Has to be one of
-#' \code{c("O", "DP", "QB", "RB", "WR", "TE", "K", "DST", "D", "DB", "DL", "LB", "DT", "DE", "CB", "S")}. 
-#' If omitted data for all offensive positions (QB, RB, WR, and TE) will be scraped. 
+#' \code{c("O", "DP", "QB", "RB", "WR", "TE", "K", "DST", "D", "DB", "DL", "LB", "DT", "DE", "CB", "S")}.
+#' If omitted data for all offensive positions (QB, RB, WR, and TE) will be scraped.
 #' @param season The year data should be scraped for. If omitted the current season
 #' data will be scraped.
-#' @param week The week that data will be scraped for. If omitted, season data 
+#' @param week The week that data will be scraped for. If omitted, season data
 #' will be scraped.
 #' @import httr tidyverse rvest
 #' @export
@@ -21,22 +21,22 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
                                       "D", "DB", "DL", "LB", "DT", "DE", "CB", "S"),
                          season = NULL, week = NULL){
 
-  
+
   position <- match.arg(position)
   stat_type <- match.arg(stat_type)
-  
+
   if(is.null(season))
     season <- current_season()
-  
+
   if(season > current_season()){
     stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
   }
-  
+
   if(!is.null(week) && week != 0){
     if(!(week %in% 1:17))
       stop("When specifying a week please only use numbers between 1 and 17", call. = FALSE)
   }
-  
+
   league_id <- getOption("ffdata.yahoo_league")
   if(is.null(league_id))
     stop("Yahoo League ID is not set. Please set yahoo league ID with options('ffdata.yahoo_league'='leagueid')", call. = FALSE )
@@ -71,12 +71,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
   yahoo_data <- data.frame()
 
   repeat({
-    next_url <- yahoo_session %>%
-      html_node("a:contains('Next')") %>%
-      html_attr("href")
 
-    if(is.na(next_url))
-      break
 
     yahoo_tbl <- yahoo_session %>%
       html_node("table[class *='Table-interactive']") %>%
@@ -102,7 +97,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
     yahoo_tbl <- yahoo_tbl %>% rename(!!!player_col)
 
     player_id <- yahoo_session %>%
-      html_nodes("a[href *= 'nfl/players']:not(a[class *='playernote'])") %>%
+      html_nodes("a[href *= 'nfl/players']:not(a[class *='playernote']), a[href *= 'nfl/teams']:not(a[class *='playernote'])") %>%
       html_attr("href") %>%
       basename()
 
@@ -110,6 +105,13 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
       yahoo_tbl <- yahoo_tbl %>% add_column(yahoo_id = player_id, .before = 1)
 
     yahoo_data <- bind_rows(yahoo_data, yahoo_tbl)
+
+    next_url <- yahoo_session %>%
+      html_node("a:contains('Next')") %>%
+      html_attr("href")
+
+    if(is.na(next_url))
+      break
 
     yahoo_session <- next_url %>% jump_to(x=yahoo_session, url =.)
   })
@@ -174,10 +176,10 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
   }
 
   yahoo_data <- janitor::clean_names(yahoo_data) %>%
-    clean_format() %>%  type_convert()
+    clean_format() %>%  type_convert() %>% mutate(yahoo_id = recode(yahoo_id, !!!yahoo_def))
 
   if(any(names(yahoo_data) == "yahoo_id"))
     yahoo_data <- yahoo_data %>% add_column(id = id_col(yahoo_data$yahoo_id, "stats_id"), .before = 1)
-  
+
   structure(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week, position = position)
 }

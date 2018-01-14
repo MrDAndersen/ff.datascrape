@@ -21,4 +21,3 @@ to use for this you will not get accuracte results. You can register for an
 API key at fantasyfootballnerd.com. 
 You set the API key for this scrape via \code{options('ffdata.ffn_api' = 'apikey')}
 }
-

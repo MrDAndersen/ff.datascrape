@@ -1,12 +1,13 @@
 Package: ff.datascrape
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Scrape Fantasy Football Projections From the Web
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Dennis Andersen
+Maintainer: Dennis Andersen <andersen.dennis@live.com>
+Description: This package allows you to scrape projected stats from multiple web
+    sources. Use the package to generate projected stats and points for your 
+    fantasy league.
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends:
@@ -14,5 +15,6 @@ Depends:
     httr,
     rvest,
     stringr,
-    janitor
-RoxygenNote: 5.0.1
+    janitor,
+    readxl
+RoxygenNote: 6.0.1

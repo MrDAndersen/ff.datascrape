@@ -1,5 +1,26 @@
 #' Scrape data from multiple sources
-#' 
+#'
+#' This function will scrape data from multiple sources.
+#' \describe{
+#'    \item{Season data: }{CBS, Yahoo, ESPN, FantasyData, FantasyPros,
+#'    FantasySharks, FFToday, FleaFlicker, NFL, NumberFire, RTSports, Walterfootball}
+#'    \item{Weekly data (regular seson): }{CBS, Yahoo, ESPN, FantasyData, FantasyPros,
+#'    FantasySharks, FFToday, FleaFlicker, NFL, NumberFire}
+#'    \item{Weekly data (post seson): }{CBS, FantasyData, FantasyPros,
+#'    FantasySharks, FFToday, FleaFlicker, NumberFire}
+#' }
+#' @param season The season data should be scraped for. If omitted then current
+#' season will be scraped
+#' @param week The week data should be scraped for. If omitted the season data will
+#' be scraped
+#' @param position The position(s) to scrape for. Select positions from:
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")}. Multiple
+#' postions are allowed.
+#' @param sources The sources to scrape for. Select sources from
+#' \code{c("CBS", "Yahoo", "ESPN", "FantasyData", "FantasyPros", "FantasySharks",
+#' "FFToday", "FleaFlicker", "NFL","NumberFire", "RTSports", "Walterfootball")}.
+#' Multiple sources are allowed.
+#' @return A list with one data.frame by position.
 #' @export
 scrape_data <- function(season = NULL, week = 0,
                         position = c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB"),
@@ -9,11 +30,15 @@ scrape_data <- function(season = NULL, week = 0,
 
   if(is.null(week))
     week <- 0
-  
+
   if(is.null(season))
     season <- current_season()
 
+  position <- match.arg(position, several.ok = TRUE)
+
   season_only <- c("RTSports", "Walterfootball")
+
+  sources <- match.arg(sources, several.ok = TRUE)
 
   playoffs <- c("CBS", "FantasyData", "FantasyPros", "FantasySharks",
                      "FFToday", "FleaFlicker", "NumberFire")
@@ -86,7 +111,14 @@ scrape_data <- function(season = NULL, week = 0,
 
   names(source_result) <- sources
 
-  return(source_result)
+  result_by_pos <- lapply(position, function(p){
+    p_data <- bind_rows(lapply(source_result, `[[`, p))
+    p_cols <- select(p_data, one_of(c("id", "src_id", "data_src")))
+    stat_cols <- select(p_data, matches("^pass|^rush|^rec|^fumb|^xp|^fg|^dst|^idp|^two|^sack|^ret"))
+    return(bind_cols(p_cols, stat_cols))
+  })
+  names(result_by_pos) <- position
+  return(result_by_pos)
 }
 
 

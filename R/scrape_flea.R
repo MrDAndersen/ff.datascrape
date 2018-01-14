@@ -1,26 +1,26 @@
 #' Scrape data from FleaFlicker
-#' 
+#'
 #' Use this function to srape fantasy football projections from FleaFlicker
-#' @param week The week that data will be scraped for. If omitted, season data 
+#' @param week The week that data will be scraped for. If omitted, season data
 #' will be scraped.
 #' @param position The player position to scrape data for. Has to be one of
-#' \code{c("QB", "RB", "WR", "TE", "Flex", "K", "DST", "DB", "DL", "LB", "IDP")}. 
-#' If omitted QB data will be scraped. Specifying \code{"Flex"} will scrape RB, 
+#' \code{c("QB", "RB", "WR", "TE", "Flex", "K", "DST", "DB", "DL", "LB", "IDP")}.
+#' If omitted QB data will be scraped. Specifying \code{"Flex"} will scrape RB,
 #' WR, and TE data. Specifying \code{"IDP"} will scrape DB, DL, and LB data.
-#' 
+#'
 #' @export
 scrape_fleaflick <- function(week = NULL,
   position = c("QB", "RB", "WR", "TE", "Flex", "K", "DST", "DB", "DL", "LB", "IDP")
   )
 {
   position <- match.arg(position)
-  
+
   if(is.null(week))
     week <- 0
-  
+
   if(week != 0 & !(week %in% 1:21))
     stop("When specifying a week please only use numbers between 1 and 21", call. = FALSE)
-  
+
   flea_positions = c("QB" = 4, "RB" = 1, "WR" = 2, "TE" = 8, "Flex" = 11, "K" = 16,
                      "DST" = 256, "DB" = 32, "DL" = 64, "LB" = 128, "IDP" = 224)
 
@@ -44,7 +44,7 @@ scrape_fleaflick <- function(week = NULL,
       html_node("#body-center-main table") %>%
       html_table()
 
-    names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$|Wild Card$", "", names(flea_table)),
+    names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$|Wild Card$|Divisional$", "", names(flea_table)),
                                flea_table[1,]))
 
     flea_table <- flea_table[-1,]
@@ -143,10 +143,10 @@ scrape_fleaflick <- function(week = NULL,
 
   if(any(names(flea_data) =="fpts"))
     flea_data$fpts <- as.numeric(flea_data$fpts)
-  
+
   if(any(names(flea_data) == "fleaflicker_id"))
     flea_data <- flea_data %>% add_column(id = id_col(flea_data$fleaflicker_id, "fleaflicker_id"), .before = 1)
-  
+
   structure(flea_data, source = "FleaFlicker", position = position, season = current_season(), week = week)
 }
 
