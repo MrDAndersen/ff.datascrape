@@ -1,14 +1,14 @@
 #' Scrape data from FFToday
 #'
 #' Use this function to srape fantasy football projections from FFToday
-#' @param season The year that data will be scraped for. If ommitted the current 
+#' @param season The year that data will be scraped for. If ommitted the current
 #' season will be used
 #' @param week The week that data will be scraped for. If \code{= 0} or omitted
 #' season data will be scraped
 #' @param position The player position to scrape data for. Has to be one of
-#' \code{c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")}. If omitted QB 
-#' data will be scraped. Note that weekly data for DST and IDP positions are not 
-#' available. 
+#' \code{c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")}. If omitted QB
+#' data will be scraped. Note that weekly data for DST and IDP positions are not
+#' available.
 #' @export
 scrape_fftoday <- function(
   season = NULL, week = NULL,
@@ -30,17 +30,17 @@ scrape_fftoday <- function(
   if(!is.null(week) && week != 0){
     if(!(week %in% 1:21))
       stop("When specifying a week please only use numbers between 1 and 21", call. = FALSE)
-  } 
+  }
 
   if(season > current_season()){
     stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
   }
-  
+
   fft_qry <- list(Season = season)
 
   fft_file <- as.character()
 
-  if(is.null(week)){
+  if(is.null(week) || week == 0){
     fft_file <- "playerproj.php"
   } else {
     fft_file <- "playerwkproj.php"
@@ -139,7 +139,7 @@ scrape_fftoday <- function(
 
   if(any(names(fft_data) == "fftoday_id"))
     fft_data <- fft_data %>% add_column(id = id_col(fft_data$fftoday_id, "fftoday_id"), .before = 1)
-  
+
   structure(fft_data, source = "FFToday", season = season, week = week, position = position)
 }
 

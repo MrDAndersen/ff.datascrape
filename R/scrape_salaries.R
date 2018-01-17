@@ -33,7 +33,9 @@ get_salaries <- function(site =  c("fanduel", "draftkings", "yahoo", "fantasydra
     salary_url <- "https://www.rtsports.com/daily/salaries/football"
 
     salary_table <- read.csv(salary_url) %>%
-      select(!!!c(Player = "NAME", Pos = "POS", Team = "TEAM", Salary = "SALARY"))
+      select(!!!c(player = "NAME", pos = "POS", team = "TEAM", Salary = "SALARY"))
+
+    salary_table <- salary_table %>% add_column(id = match_players(salary_table), .before = 1)
   }
 
   salary_table <- janitor::clean_names(salary_table)

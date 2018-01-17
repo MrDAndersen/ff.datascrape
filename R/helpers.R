@@ -1,3 +1,4 @@
+
 #' @export
 str_to_url <- function(u)httr::build_url(httr::parse_url(u))
 
@@ -59,31 +60,61 @@ current_season <- function(){
 
 }
 
-yahoo_def <- c("jac" = "30", "bal" = "33", "lar" = "14", "phi" = "21", "det" = "8",
-               "lac" = "24", "nor" = "18", "sea" = "26", "chi" = "3",  "car" = "29",
-               "pit" = "23", "nwe" = "17",  "kan" = "12", "min" = "16", "dal" = "6",
-               "was" = "28", "den" = "7", "ari" = "22", "ten" = "10", "tam" = "27",
-               "buf" = "2", "cin" = "4", "atl" = "1", "gnb" = "9", "mia" = "15",
-               "ind" = "11", "nyg" = "19",  "hou" = "34", "sfo" = "25", "cle" = "5",
-               "nyj" = "20", "oak" = "13")
+
+clean_pname <- function(x){
+  gsub("[J|S]r\\.*$|[[:punct:]]|\\s",  "", x)
+}
 
 
-nflTeam.abb <- c("ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE",
-                 "DAL", "DEN", "DET", "GB",  "HOU", "IND", "JAX", "KC",
-                 "MIA", "MIN", "NO",  "NE",  "NYG", "NYJ", "PHI", "PIT",
-                 "LA",  "SF",  "LAC", "TB",  "TEN", "WAS", "SEA", "OAK")
+match_by_col <- function(x, y, match_col, id_vars){
+  x_col <- x[[match_col]]
+  y_col <- y[[match_col]]
 
-nflTeam.id <- c("100026", "100001", "100002", "100003", "100004", "100005", "100006", "100007",
-                "100008", "100009", "100010", "100011", "100013", "100014", "100015", "100016",
-                "100019", "100020", "100022", "100021", "100023", "100024", "100025", "100027",
-                "100017", "100029", "100028", "100031", "100012", "100032", "100030", "100018")
+  x_dups <- x_col[duplicated(x_col)]
+  y_dups <- y_col[duplicated(y_col)]
 
-cbs_def <- c("ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", "DAL", "DEN",
-             "DET", "GB", "HOU", "IND", "JAC", "KC",  "LAC", "LAR", "MIA", "MIN",
-             "NE" , "NO",  "NYG", "NYJ", "OAK", "PHI", "PIT", "SEA", "SF",  "TB",
-             "TEN", "WAS")
+  val_match <- intersect(x_col[!(x_col %in% x_dups)], y_col[!(y_col %in% y_dups)])
 
-cbs_def_id <- c("1901", "1902", "1903", "1904", "1905", "1906", "1907", "1930", "1908", "1909",
-                "1910", "1911", "1932", "1912", "1913", "1914", "1924", "1923", "1915", "1916",
-                "1931", "1917", "1918", "1919", "1920", "1921", "1922", "1926", "1925", "1927",
-                "1928", "1929")
+  xy_match <- inner_join(x[x[[match_col]] %in% val_match, c(match_col, id_vars[1])],
+                         y[y[[match_col]] %in% val_match, c(match_col, id_vars[2])],
+                         by = match_col) %>% select(id_vars)
+  return(xy_match)
+}
+
+
+match_players <- function(x){
+  x <- mutate(x, pos = recode(pos, !!!pos_corrections), team = recode(team, !!!team_corrections))
+  p_tbl <- mutate(ff_player_data, position = recode(position, !!!pos_corrections),
+                  team = recode(team, !!!team_corrections))
+
+  match_pos <- unique(x$pos)
+
+  p_tbl <- filter(p_tbl, position %in% match_pos) %>%
+    mutate(match_name = tolower(clean_pname(recode(name, !!!name_corrections ))),
+           match_name_pos = paste(match_name, tolower(position), sep = "-"),
+           match_name_pos_tm = paste(match_name_pos, tolower(team), sep = "-"))
+
+  x <- x %>%
+    mutate(match_name = tolower(clean_pname(recode(player, !!!name_corrections ))),
+           match_name_pos = paste(match_name, tolower(pos), sep = "-"),
+           match_name_pos_tm = paste(match_name_pos, tolower(team), sep = "-"))
+
+  x <- add_column(x, tmp_id = 1:nrow(x))
+
+  matched <- data.frame(tmp_id=as.integer(NA), id = as.character(NA), stringsAsFactors = FALSE)[-1,]
+
+  for(col in c("match_name_pos_tm", "match_name_pos", "match_name")){
+    x_tbl <- filter(x, !(x$tmp_id %in% matched$tmp_id))
+    y_tbl <- filter(p_tbl, !(p_tbl$id %in% matched$id))
+    match_ids <- match_by_col(x_tbl, y_tbl, col, c("tmp_id", "id"))
+    matched <- bind_rows(list(matched, match_ids))
+  }
+
+  return(matched$id[match(x$tmp_id, matched$tmp_id)])
+}
+
+rate_stat <- function(x, y)ifelse(y != 0, x / y, 0)
+
+from_rate <- function(x, y)ifelse(is.na(x), x * y, x)
+
+

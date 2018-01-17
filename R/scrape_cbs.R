@@ -62,7 +62,6 @@ scrape_cbs <- function(week = NULL, position = c("QB", "RB", "WR", "TE", "K", "D
     cbs_table <- cbs_table %>% add_column(cbs_id = pids, .before = 1)
   }
 
-  print(names(cbs_table))
   if(position == "DST")
     cbs_table <- cbs_table %>% rowwise() %>% mutate(cbs_id = cbs_def_id[which(cbs_def == Team)])
 

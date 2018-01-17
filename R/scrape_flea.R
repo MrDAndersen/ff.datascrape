@@ -44,7 +44,7 @@ scrape_fleaflick <- function(week = NULL,
       html_node("#body-center-main table") %>%
       html_table()
 
-    names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$|Wild Card$|Divisional$", "", names(flea_table)),
+    names(flea_table) <- trimws(paste(gsub("^Projected |\\sWeek [0-9]+$|Wild Card$|Divisional$|Conference$", "", names(flea_table)),
                                flea_table[1,]))
 
     flea_table <- flea_table[-1,]
@@ -130,9 +130,9 @@ scrape_fleaflick <- function(week = NULL,
   flea_data <- janitor::clean_names(flea_data) %>%
     clean_format() %>%  type_convert()
 
-  if(position == "QB"){
+  if(position == "QB" & any(names(flea_data) == "pass_comp_pct")){
     flea_data <- flea_data %>%
-      mutate(pass_comp_pct = sapply(pass_comp_pct, function(x)eval(parse(text=x)), USE.NAMES=FALSE))
+      mutate(pass_comp_pct = sapply(pass_comp_pct, function(x)eval(parse(text=x))*100, USE.NAMES=FALSE))
   }
 
   if(position == "K"){

@@ -53,7 +53,7 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
     gsub("(^.+','Sort\\$)(.+)('\\))", "\\2", .) %>%
     gsub("Fantasy*", "", ., ignore.case = TRUE)
 
-  fd_table <- fd_table %>% rename(rank = "Rk", fantasydata_id = "PlayerID",
+  fd_table <- fd_table %>% rename(rank = "Rk", fdata_id = "PlayerID",
                                   player = "Name", pos = "Position")
 
   if(position %in% c("QB", "RB", "WR", "TE")){
@@ -91,8 +91,8 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
   fd_table <- fd_table %>% janitor::clean_names() %>%
     clean_format() %>%  type_convert()
 
-  if(any(names(fd_table) == "fantasydata_id"))
-    fd_table <- fd_table %>% add_column(id = id_col(fd_table$fantasydata_id, "fantasydata_id"), .before = 1)
+  if(any(names(fd_table) == "fdata_id"))
+    fd_table <- fd_table %>% add_column(id = id_col(fd_table$fdata_id, "fantasydata_id"), .before = 1)
 
   structure(fd_table, source = "FantasyData", week = week, position = position)
 }
