@@ -31,7 +31,8 @@ scrape_rts <- function(position = c("QB", "RB", "WR", "TE", "K", "DST")){
     gsub("_rcpts", "", .) %>%
     gsub("atts$", "att", .) %>%
     gsub("kick_patm", "xp", .) %>%
-    gsub("kick_fgm", "fg",.)
+    gsub("kick_fgm", "fg",.) %>%
+    gsub("kick_fga", "fg_att",.)
 
   if(position == "DST"){
     rts_data <- rts_data %>%

@@ -8,15 +8,15 @@ scrape_fftoday(season = NULL, week = NULL, position = c("QB", "RB", "WR",
   "TE", "K", "DST", "DL", "LB", "DB"))
 }
 \arguments{
-\item{season}{The year that data will be scraped for. If ommitted the current 
+\item{season}{The year that data will be scraped for. If ommitted the current
 season will be used}
 
 \item{week}{The week that data will be scraped for. If \code{= 0} or omitted
 season data will be scraped}
 
 \item{position}{The player position to scrape data for. Has to be one of
-\code{c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")}. If omitted QB 
-data will be scraped. Note that weekly data for DST and IDP positions are not 
+\code{c("QB", "RB", "WR", "TE", "K", "DST", "DL", "LB", "DB")}. If omitted QB
+data will be scraped. Note that weekly data for DST and IDP positions are not
 available.}
 }
 \description{

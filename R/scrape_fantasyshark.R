@@ -1,7 +1,7 @@
 #' Scrape data from FantasySharks
-#' 
+#'
 #' Use this function to srape fantasy football projections from FantasySharks
-#' @param season The year that data will be scraped for. If ommitted the current 
+#' @param season The year that data will be scraped for. If ommitted the current
 #' season will be used
 #' @param week The week that data will be scraped for. If \code{= 0} or omitted
 #' season data will be scraped
@@ -9,22 +9,22 @@
 #' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
 #' @export
 scrape_fantasysharks <- function(season = NULL,  week = NULL,
-                                 position =c("QB", "RB", "WR", "TE", "K", "DEF",
+                                 position =c("QB", "RB", "WR", "TE", "K", "DST",
                                              "DL", "LB", "DB")){
 
   position <- match.arg(position)
-  
+
   if(is.null(week))
     week <- 0
-  
+
   if(is.null(season))
     season <- current_season()
-  
+
   if(season > current_season()){
     stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
   }
-  
-  fs_pos <- c("QB" = 1, "RB" =2 , "WR" = 4, "TE" = 5, "K" = 7, "DEF" = 6, "DL" = 8, "LB"=9, "DB" = 10)
+
+  fs_pos <- c("QB" = 1, "RB" =2 , "WR" = 4, "TE" = 5, "K" = 7, "DST" = 6, "DL" = 8, "LB"=9, "DB" = 10)
 
   fs_base <- str_to_url("https://www.fantasysharks.com/apps/bert/forecasts/projections.php")
 
@@ -90,7 +90,7 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
       offensive_columns()
   }
 
-  if(position == "DEF"){
+  if(position == "DST"){
     names(fs_table) <- names(fs_table) %>%
       gsub("yds allowed", "dst_yds_allow", ., ignore.case = TRUE) %>%
       gsub("pts agn", "dst_pts_allow", ., ignore.case = TRUE) %>%
@@ -114,11 +114,11 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
   }
 
   ### NOTE: Fantasysharks is using the same id as MFL
-  fs_table <- fs_table %>% add_column(id = str_pad(fs_ids, 4, "left", "0"), .before = 1)
+  fs_table <- fs_table %>% add_column(id =fs_ids, .before = 1)
 
   fs_table <- janitor::clean_names(fs_table) %>%
     clean_format() %>%  type_convert() %>%
-    rename(team=tm)
+    rename(team=tm) %>% mutate(id = str_pad(fs_ids, 4, "left", "0"), shark_id = fs_ids)
 
   structure(fs_table, source = "FantasySharks", season = season, week = week, position = position)
 }
