@@ -113,8 +113,10 @@ match_players <- function(x){
   return(matched$id[match(x$tmp_id, matched$tmp_id)])
 }
 
+
 rate_stat <- function(x, y)ifelse(y != 0, x / y, 0)
 
 from_rate <- function(x, y)ifelse(is.na(x), x * y, x)
+
 
 
