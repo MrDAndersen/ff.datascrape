@@ -113,10 +113,55 @@ match_players <- function(x){
   return(matched$id[match(x$tmp_id, matched$tmp_id)])
 }
 
-
+#' @export
 rate_stat <- function(x, y)ifelse(y != 0, x / y, 0)
 
-from_rate <- function(x, y)ifelse(is.na(x), x * y, x)
+#' @export
+from_rate <- function(var1, var2, rate)ifelse(is.na(var1), var2 * rate, var1)
 
+#' @export
+nan_zero <- function(x)ifelse(is.finite(x), x, 0)
 
+#' @export
+val_from_rate <- function(tbl, var_1, var_2){
+  v1 <- enquo(var_1)
+  v2 <- enquo(var_2)
+
+  var_tbl <- select(tbl, id, !!v1, !!v2, data_src) %>% filter(!is.na(id))
+
+  miss_var <- var_tbl[!complete.cases(var_tbl),]
+
+  if(nrow(miss_var) > 0){
+    tvars <- names(var_tbl)[2:3]
+    miss_tbl <- var_tbl[complete.cases(var_tbl),] %>%
+      transmute(id, rt = rate_stat(!!v1, !!v2)) %>% group_by(id) %>%
+      summarise(rate_var = mean(rt, na.rm = TRUE)) %>%
+      inner_join(x=miss_var, by = "id") %>%
+      mutate(!!tvars[1] := nan_zero(from_rate(!!v1, !!v2, rate_var)),
+             !!tvars[2] := nan_zero(from_rate(!!v2, !!v1, 1/rate_var))) %>%
+      select(-rate_var)
+
+    var_tbl <- bind_rows(var_tbl[complete.cases(var_tbl),], miss_tbl)
+  }
+
+  return(var_tbl)
+}
+
+#' @export
+val_from_calc <- function(calc_tbl, stat_tbl, var_1, var_2){
+  v1 <- enquo(var_1)
+  v2 <- enquo(var_2)
+
+  calc_vars <- paste(setdiff(names(calc_tbl), c("id", "data_src")), collapse = "|")
+  stat_tbl <- select(stat_tbl, id, data_src, !!v1)
+  if(nrow(stat_tbl[!complete.cases(stat_tbl),]) > 0){
+    var_tbl <- calc_tbl %>%
+      inner_join(stat_tbl, by = c("id", "data_src")) %>%
+      val_from_rate(!!v1, !!v2) %>% select(-matches(calc_vars)) %>%
+      inner_join(calc_tbl, by = c("id", "data_src"))
+  } else {
+    var_tbl <- stat_tbl %>% inner_join(calc_tbl, by = c("id", "data_src"))
+  }
+  return(var_tbl)
+}
 

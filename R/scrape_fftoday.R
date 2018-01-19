@@ -44,7 +44,7 @@ scrape_fftoday <- function(
     fft_file <- "playerproj.php"
   } else {
     fft_file <- "playerwkproj.php"
-    if(week > 0 & position %in% c("DEF", "DL", "LB", "DB"))
+    if(week > 0 & position %in% c("DST", "DL", "LB", "DB"))
       message("NOTE:\tFFToday does not provide weekly defensive projections.\n",
               "\tTable is empty.")
   }

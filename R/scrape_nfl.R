@@ -1,5 +1,5 @@
 #' Scrape data from NFL
-#' 
+#'
 #' Use this function to srape fantasy football projections from NFL. This function
 #' is using the NFL Fantasy api.
 #' @param season The year that data will be scraped for. If omitted the current
@@ -13,11 +13,11 @@ scrape_nfl <- function(season = NULL, week = NULL,
                        position = c("QB", "RB", "WR", "TE", "K" , "DST", "DL", "LB", "DB")){
 
   position <- match.arg(position)
-  
+
   if(is.null(season)){
     season <- current_season()
   }
-  
+
   nfl_stats <- dplyr::bind_rows(
     lapply(httr::content(httr::GET("http://api.fantasy.nfl.com/v1/game/stats?format=json"))$stats,
            data.frame)
@@ -38,7 +38,7 @@ scrape_nfl <- function(season = NULL, week = NULL,
 
   if(!is.null(week) && week != 0){
     week <- as.character(week)
-    week <- match.arg(week, choices = 1:21)
+    week <- match.arg(week, choices = 1:16)
     nfl_qry$week <- week
   }
 
@@ -101,10 +101,10 @@ scrape_nfl <- function(season = NULL, week = NULL,
   }
   nfl_data <- janitor::clean_names(nfl_data) %>%
     clean_format() %>%  type_convert()
-  
+
   if(any(names(nfl_data) == "nfl_id"))
-    nfl_data <- nfl_data %>% add_column(id = id_col(espn_data$nfl_id, "nfl_id"), .before = 1)
-  
+    nfl_data <- nfl_data %>% add_column(id = id_col(nfl_data$nfl_id, "nfl_id"), .before = 1)
+
   structure(nfl_data, source = "NFL", season = season, week = week, position = position)
 }
 

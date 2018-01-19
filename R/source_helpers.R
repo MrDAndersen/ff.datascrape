@@ -64,7 +64,8 @@ get_src_data <- function(season, week, position, sources){
       src_result <- lapply(src_pos, function(p){
         src_args$position = p
         res <- do.call(scrape_func[[src]], src_args)
-        res$data_src <- src
+        if(nrow(res)>0)
+          res$data_src <- src
         if(any(grepl("_id$", names(res)))){
           id_column <- names(select(res, ends_with("_id")))
           names(id_column) <- "src_id"

@@ -5,10 +5,10 @@
 \title{Scrape data from FantasySharks}
 \usage{
 scrape_fantasysharks(season = NULL, week = NULL, position = c("QB", "RB",
-  "WR", "TE", "K", "DEF", "DL", "LB", "DB"))
+  "WR", "TE", "K", "DST", "DL", "LB", "DB"))
 }
 \arguments{
-\item{season}{The year that data will be scraped for. If ommitted the current 
+\item{season}{The year that data will be scraped for. If ommitted the current
 season will be used}
 
 \item{week}{The week that data will be scraped for. If \code{= 0} or omitted
