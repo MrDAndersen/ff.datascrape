@@ -4,7 +4,7 @@ str_to_url <- function(u)httr::build_url(httr::parse_url(u))
 
 #' @export
 shark_segment <- function(season, week){
-  shark_season <- c("2017"= 586)
+  shark_season <- c("2017"= 586, "2018"=618, "2019" = 650, "2020"=682)
 
   segment <- shark_season[as.character(season)] + week + 9 * (week > 0)
   return(segment)
@@ -117,10 +117,10 @@ match_players <- function(x){
 rate_stat <- function(x, y)ifelse(y != 0, x / y, 0)
 
 #' @export
-from_rate <- function(var1, var2, rate)ifelse(is.na(var1), var2 * rate, var1)
+from_rate <- function(var1, var2, rate)ifelse(is.na(var1) & rate > 0, var2 * rate, var1)
 
 #' @export
-nan_zero <- function(x)ifelse(is.finite(x), x, 0)
+nan_zero <- function(x)ifelse(is.nan(x) | is.infinite(x), 0, x)
 
 #' @export
 val_from_rate <- function(tbl, var_1, var_2){
@@ -152,16 +152,63 @@ val_from_calc <- function(calc_tbl, stat_tbl, var_1, var_2){
   v1 <- enquo(var_1)
   v2 <- enquo(var_2)
 
-  calc_vars <- paste(setdiff(names(calc_tbl), c("id", "data_src")), collapse = "|")
+  calc_vars <- paste0("^", paste(setdiff(names(calc_tbl), c("id", "data_src")), collapse = "$|^"), "$")
   stat_tbl <- select(stat_tbl, id, data_src, !!v1)
+
   if(nrow(stat_tbl[!complete.cases(stat_tbl),]) > 0){
     var_tbl <- calc_tbl %>%
       inner_join(stat_tbl, by = c("id", "data_src")) %>%
       val_from_rate(!!v1, !!v2) %>% select(-matches(calc_vars)) %>%
-      inner_join(calc_tbl, by = c("id", "data_src"))
+      right_join(calc_tbl, by = c("id", "data_src"))
   } else {
     var_tbl <- stat_tbl %>% inner_join(calc_tbl, by = c("id", "data_src"))
   }
   return(var_tbl)
 }
 
+#' @export
+miss_rate <- function(tbl_rate, tbl_raw, grp_var, avg_var){
+  fv <- enquo(grp_var)
+  av <- enquo(avg_var)
+
+  res <- tbl_raw %>%
+    transmute(var_lim = ceiling(!!fv), var_tgt = !!av) %>%
+    group_by(var_lim) %>% summarise(avg = mean(var_tgt, na.rm = TRUE)) %>%
+    filter(!is.na(var_lim))
+
+  var_name <- names(select(tbl_raw, !!av))
+
+  res <- tbl_rate %>% mutate(var_lim = ceiling(!!fv)) %>%
+    left_join(res, by = "var_lim") %>%
+    mutate(!!var_name := ifelse(is.na(!!av), avg, !!av)) %>%
+    select(-var_lim, -avg)
+
+  return(res)
+}
+
+dist_rate <- function(rate_tbl, stat_tbl, base_var, ...){
+  b_var <- enquo(base_var)
+  d_var <- quos(...)
+
+  for(i in seq_along(d_var)){
+    rate_tbl <- rate_tbl %>% val_from_calc(stat_tbl, !!d_var[[i]], !!b_var)
+  }
+
+  return(rate_tbl)
+}
+
+get_stat_cols <- function(tbl, match_pattern){
+  id_cols <- select(tbl, id, data_src)
+
+  stat_cols <- select(tbl, matches(match_pattern))
+
+  if(length(stat_cols) > 0)
+    return(bind_cols(id_cols, stat_cols))
+
+  return(data.frame())
+}
+
+sum_columns <- function(tbl, ..., na.rm = FALSE){
+  sum_vars <- quos(...)
+  select(tbl, !!! sum_vars) %>% rowSums(na.rm = na.rm)
+}

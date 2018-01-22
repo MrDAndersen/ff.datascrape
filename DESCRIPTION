@@ -24,6 +24,7 @@ Collate:
     'ff_datascrape.R'
     'helper_variables.R'
     'helpers.R'
+    'impute_funcs.R'
     'scrape_cbs.R'
     'scrape_data.R'
     'scrape_ecr.R'
@@ -41,3 +42,4 @@ Collate:
     'scrape_wf.R'
     'scrape_yahoo.R'
     'source_helpers.R'
+    'stats_aggregation.R'
