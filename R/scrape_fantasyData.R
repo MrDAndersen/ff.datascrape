@@ -40,21 +40,8 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
 
   fd_url <- modify_url(fd_base, query = fd_qry)
 
-  fd_session <- html_session(fd_url)
-
-  fd_page <- read_html(fd_session)
-
-  fd_table <- fd_page %>%
-    html_node("table") %>% html_table()
-
-  names(fd_table)[2:length(fd_table)] <- fd_page %>%
-    html_nodes("table tr th a") %>%
-    html_attr("href") %>%
-    gsub("(^.+','Sort\\$)(.+)('\\))", "\\2", .) %>%
-    gsub("Fantasy*", "", ., ignore.case = TRUE)
-
-  fd_table <- fd_table %>% rename(rank = "Rk", fdata_id = "PlayerID",
-                                  player = "Name", pos = "Position")
+  fd_table <- scrape_html_data(fd_url)
+  fd_table <- fd_table %>% rename(rank = "Rk", player = "Name", pos = "Position")
 
   if(position %in% c("QB", "RB", "WR", "TE")){
     names(fd_table) <- offensive_columns(names(fd_table)) %>%
@@ -88,11 +75,7 @@ scrape_fantasydata <- function(week = -1, position = c("QB", "RB", "WR", "TE", "
       dst_pts_allow = "pointsallowed"
     )
   }
-  fd_table <- fd_table %>% janitor::clean_names() %>%
-    clean_format() %>%  type_convert()
-
-  if(any(names(fd_table) == "fdata_id"))
-    fd_table <- fd_table %>% add_column(id = id_col(fd_table$fdata_id, "fantasydata_id"), .before = 1)
+  fd_table <- ff_clean_names(fd_table)
 
   structure(fd_table, source = "FantasyData", week = week, position = position)
 }

@@ -1,6 +1,20 @@
-#' @include scrape_cbs.R scrape_yahoo.R scrape_espn.R scrape_fantasyData.R scrape_fantasypros.R scrape_fantasyshark.R scrape_fftoday.R scrape_flea.R scrape_nfl.R scrape_numfire.R scrape_rts.R scrape_wf.R
-
-
+#' Helper objects for data sources
+#'
+#' \describe{
+#'   \item{\code{scrape_func}}{A list with the names of the functions used to
+#'   scrape data from a source}
+#'   \item{\code{season_only_sources}}{Vector with names of sources that only
+#'   provide seasonal data}
+#'   \item{\code{playoff_sources}}{Vector with names of sources that
+#'   provide data for playoffs (week 17-20)}
+#' }
+#'
+#' @include scrape_cbs.R scrape_yahoo.R scrape_espn.R scrape_fantasyData.R
+#'   scrape_fantasypros.R scrape_fantasyshark.R scrape_fftoday.R scrape_flea.R
+#'   scrape_nfl.R scrape_numfire.R scrape_rts.R scrape_wf.R
+#' @name data_sources
+#' @format NULL
+#' @usage NULL
 scrape_func = list("CBS" = scrape_cbs,
                    "Yahoo" = scrape_yahoo,
                    "ESPN" = scrape_espn,
@@ -14,15 +28,16 @@ scrape_func = list("CBS" = scrape_cbs,
                    "RTSports" = scrape_rts,
                    "Walterfootball" = scrape_wf)
 
-
-
+#' @rdname data_sources
+#' @usage NULL
+#' @format NULL
 season_only_sources <- c("RTSports", "Walterfootball")
 
-
-
+#' @rdname data_sources
+#' @usage NULL
+#' @format NULL
 playoff_sources <- c("CBS", "FantasyData", "FantasyPros", "FantasySharks",
                      "FFToday", "FleaFlicker", "NumberFire")
-
 
 check_sources <- function(week, sources){
   if(week > 0 & any(sources %in% season_only_sources)){
@@ -42,6 +57,7 @@ check_sources <- function(week, sources){
   }
   return(sources)
 }
+
 get_src_data <- function(season, week, position, sources){
   source_result <- lapply(sources, function(src){
     src_formals <- formals(scrape_func[[src]])
@@ -96,6 +112,7 @@ get_src_data <- function(season, week, position, sources){
   })
 
   names(source_result) <- sources
+
 
   result_by_pos <- lapply(position, function(p){
     p_data <- bind_rows(lapply(source_result, `[[`, p))

@@ -8,7 +8,7 @@ scrape_fantasypros(week = NULL, position = c("QB", "RB", "WR", "TE", "K",
   "DST"))
 }
 \arguments{
-\item{week}{The week that data will be scraped for. If omitted, season data 
+\item{week}{The week that data will be scraped for. If omitted, season data
 will be scraped.}
 
 \item{position}{The player position to scrape data for. Has to be one of

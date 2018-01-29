@@ -26,14 +26,13 @@ offensive_columns <- function(tbl_columns){
     gsub(pattern = "(T)(ouch)*(d)(own)*s*", replacement = "\\L\\1\\L\\3s", ignore.case = TRUE, perl = TRUE) %>%
     gsub(pattern = "(Rec)e*p*t*(ion)*s*$", replacement = "\\L\\1", ignore.case = TRUE, perl = TRUE) %>%
     gsub(pattern = "(Int)(erception)*s*$", replacement = "\\L\\1", ignore.case = TRUE, perl = TRUE) %>%
-    gsub(pattern = "\\b(\\w+)([[:punct:]]|\\s)+\\1\\b", replacement = "\\1", ignore.case = TRUE) %>%
     gsub(pattern = "(Percent)(age)*", replacement = "pct", ignore.case = TRUE, perl = TRUE) %>%
     gsub(pattern = "Per", replacement = "per", ignore.case = TRUE, perl = TRUE) %>%
     gsub(pattern ="(pass|rush|rec)([[:alpha:]])", replacement = "\\1 \\2") %>%
     gsub(pattern ="ydsperatt", replacement = "avg") %>%
     gsub(pattern ="comppct", replacement = "comp pct", ignore.case= TRUE) %>%
-    gsub(pattern ="Return", replacement = "ret", ignore.case= TRUE)
-
+    gsub(pattern ="Return", replacement = "ret", ignore.case= TRUE) %>%
+    gsub(pattern = "\\b(\\w+)([[:punct:]]|\\s)+\\1\\b", replacement = "\\1", ignore.case = TRUE)
   return(tbl_columns)
 }
 #' @export
@@ -176,7 +175,7 @@ miss_rate <- function(tbl_rate, tbl_raw, grp_var, avg_var){
     group_by(var_lim) %>% summarise(avg = mean(var_tgt, na.rm = TRUE)) %>%
     filter(!is.na(var_lim))
 
-  var_name <- names(select(tbl_raw, !!av))
+  var_name <- quo_name(av)
 
   res <- tbl_rate %>% mutate(var_lim = ceiling(!!fv)) %>%
     left_join(res, by = "var_lim") %>%
@@ -202,9 +201,16 @@ get_stat_cols <- function(tbl, match_pattern){
 
   stat_cols <- select(tbl, matches(match_pattern))
 
-  if(length(stat_cols) > 0)
-    return(bind_cols(id_cols, stat_cols))
+  check_cols <- stat_cols %>% is.na() %>% rowSums()
 
+  check_sums <-  stat_cols %>% rowSums(na.rm=TRUE)
+
+  if(length(stat_cols) > 0){
+    stat_tbl <- bind_cols(id_cols, stat_cols)
+    stat_tbl <- stat_tbl[check_cols < length(stat_cols),]
+    stat_tbl <- stat_tbl[check_sums != 0,]
+    return(stat_tbl)
+  }
   return(data.frame())
 }
 

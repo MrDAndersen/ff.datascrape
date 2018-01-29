@@ -36,17 +36,7 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
 
   fs_url <- modify_url(fs_base, query = fs_qry)
 
-  fs_page <- read_html(fs_url)
-
-  fs_page %>% html_nodes("tr.separator") %>% xml_remove()
-  fs_page %>% html_nodes("#toolData tr[valign ='middle']:not(:first-child)") %>% xml_remove()
-  fs_page %>% html_nodes("#toolData tr[height ='20px']") %>% xml_remove()
-  fs_table <- fs_page %>% html_node("#toolData") %>% html_table()
-
-  fs_table <- fs_table %>% repair_names()
-
-  fs_ids <- fs_page %>% html_nodes("td.playerLink a") %>% html_attr("href") %>%
-    sapply(., function(u)parse_url(u)$query$id, USE.NAMES = FALSE)
+  fs_table <- scrape_html_data(fs_url)
 
   if(any(names(fs_table) %in% c(">= 50 yd1", ">= 100 yd1" ))){
     fs_table <- fs_table %>%
@@ -113,12 +103,7 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
       gsub("passdef", "idp_pd", ., ignore.case = TRUE)
   }
 
-  ### NOTE: Fantasysharks is using the same id as MFL
-  fs_table <- fs_table %>% add_column(id =fs_ids, .before = 1)
-
-  fs_table <- janitor::clean_names(fs_table) %>%
-    clean_format() %>%  type_convert() %>%
-    rename(team=tm) %>% mutate(id = str_pad(fs_ids, 4, "left", "0"), shark_id = fs_ids)
+  fs_table <- ff_clean_names(fs_table) %>% rename(team=tm)
 
   structure(fs_table, source = "FantasySharks", season = season, week = week, position = position)
 }

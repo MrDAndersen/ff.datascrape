@@ -77,7 +77,7 @@ scrape_fleaflick <- function(week = NULL,
       html_attr("href") %>%
       str_extract("[0-9]{3,}$")
 
-    flea_table <- flea_table %>% add_column(fleaflicker_id = player_id, .before =1)
+    flea_table <- flea_table %>% add_column(src_id = player_id, .before =1)
 
     flea_data <- bind_rows(flea_data, flea_table)
 
@@ -127,8 +127,10 @@ scrape_fleaflick <- function(week = NULL,
       gsub("ff$", "fum_force", ., ignore.case = TRUE)
   }
 
-  flea_data <- janitor::clean_names(flea_data) %>%
-    clean_format() %>%  type_convert()
+  if(any(names(flea_data) == "src_id"))
+    flea_data <- flea_data %>% add_column(id = id_col(flea_data$src_id, "fleaflicker_id"), .before = 1)
+
+  flea_data <-ff_clean_names(flea_data)
 
   if(position == "QB" & any(names(flea_data) == "pass_comp_pct")){
     flea_data <- flea_data %>%

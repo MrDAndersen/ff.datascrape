@@ -60,44 +60,7 @@ scrape_fftoday <- function(
 
   fft_url <- httr::modify_url(fft_base, path = fft_path, query = fft_qry)
 
-  fft_session <- rvest::html_session(fft_url)
-
-  fft_data <- data.frame()
-
-  repeat({
-
-    fft_page <- xml2::read_html(fft_session)
-
-    fft_table <- rvest::html_table(rvest::html_nodes(fft_page, "table")[[11]], header = TRUE)
-
-    names(fft_table) <- trimws(
-      paste(names(fft_table), gsub("[^[:alpha:]]|Sort|First:|Last:", "", fft_table[1,])
-      ))
-
-    fft_table <- fft_table[-1,]
-
-    player_links <- rvest::html_attr(rvest::html_nodes(fft_page, "a[href *='stats/players/']"), "href")
-
-    player_id <- stringr::str_extract(player_links, "[0-9]{2,6}")
-
-    if(length(player_id) == nrow(fft_table))
-      fft_table <- tibble::add_column(fft_table, fftoday_id = player_id, .before = 1)
-
-    if(!any(names(fft_table) == "Player"))
-      fft_table <- fft_table %>% rename(Player = Team)
-
-    fft_table <- tibble::add_column(fft_table, Pos =  position, .after =  which(names(fft_table) == "Player"))
-
-    fft_data <- dplyr::bind_rows(fft_data, fft_table)
-
-    next_url <- rvest::html_attr(rvest::html_node(fft_page, "a:contains('Next')"), "href")
-
-    if(is.na(next_url))
-      break
-
-    fft_session <- rvest::jump_to(fft_session, next_url)
-
-  })
+  fft_data <- scrape_html_data(fft_url)
 
   if(position %in% c("QB", "RB", "WR", "TE"))
      names(fft_data) <- offensive_columns(names(fft_data))
@@ -123,6 +86,11 @@ scrape_fftoday <- function(
       gsub("PaYdG", "dst pass yds game", .) %>%
       gsub("RuYdG", "dst rush yds game", .) %>%
       gsub("KickTD", "dst kick ret td", .)
+
+    print(names(fft_data))
+    fft_data <- add_column(fft_data,
+               id = ff_player_data$id[match(fft_data$Team, ff_player_data$name)],
+               .before = 1)
   }
 
   if(position %in% c("DL", "LB", "DB")){
@@ -133,12 +101,7 @@ scrape_fftoday <- function(
       gsub("Fantasy ", "", . , ignore.case = TRUE)
   }
 
-
-  fft_data <- fft_data %>% janitor::clean_names() %>%
-    clean_format() %>%  type_convert()
-
-  if(any(names(fft_data) == "fftoday_id"))
-    fft_data <- fft_data %>% add_column(id = id_col(fft_data$fftoday_id, "fftoday_id"), .before = 1)
+  fft_data <- ff_clean_names(fft_data)
 
   structure(fft_data, source = "FFToday", season = season, week = week, position = position)
 }

@@ -1,7 +1,7 @@
 #' Scrape data from FantasyPros
-#' 
+#'
 #' Use this function to srape fantasy football projections from FantasyPros
-#' @param week The week that data will be scraped for. If omitted, season data 
+#' @param week The week that data will be scraped for. If omitted, season data
 #' will be scraped.
 #' @param position The player position to scrape data for. Has to be one of
 #' \code{c("QB", "RB", "WR", "TE", "K", "DST")}. If omitted QB data will be scraped.
@@ -10,7 +10,7 @@ scrape_fantasypros <- function(week = NULL,
                                position = c("QB", "RB", "WR", "TE", "K", "DST")){
 
   position <- match.arg(position)
-  
+
   fp_url <- str_to_url(
     sprintf("https://www.fantasypros.com/nfl/projections/%s.php", tolower(position))
   )
@@ -22,30 +22,32 @@ scrape_fantasypros <- function(week = NULL,
       stop("When specifying a week please only use numbers between 1 and 21", call. = FALSE)
   }
 
-  fp_session <- html_session(fp_url)
+  # fp_session <- html_session(fp_url)
+  #
+  # fp_page <- read_html(fp_session)
+  #
+  # fp_table <- fp_page %>% html_node("#data") %>% html_table(header = TRUE)
+#
+#   if(is.na(as.numeric(fp_table[1, length(fp_table)]))){
+#     names(fp_table) <- trimws(paste(names(fp_table), fp_table[1,]))
+#     fp_table <- fp_table[-1,]
+#   }
 
-  fp_page <- read_html(fp_session)
-
-  fp_table <- fp_page %>% html_node("#data") %>% html_table(header = TRUE)
-
-  if(is.na(as.numeric(fp_table[1, length(fp_table)]))){
-    names(fp_table) <- trimws(paste(names(fp_table), fp_table[1,]))
-    fp_table <- fp_table[-1,]
-  }
+  fp_table <- scrape_html_data(fp_url)
 
   if(position != "DST"){
     fp_table <- fp_table %>%
       extract("Player", c("Player", "Team"), "(.+)\\s([A-Z]{2,3}$)")
   }
 
-  fp_ids <- fp_page %>%
-    html_nodes("a.player-name") %>%
-    html_attr("href") %>%
-    basename() %>% gsub(".php", "", .)
-
-
-  fp_table <- fp_table %>%  add_column(fantasypro_id = fp_ids, .before = 1)
-
+  # fp_ids <- fp_page %>%
+  #   html_nodes("a.player-name") %>%
+  #   html_attr("href") %>%
+  #   basename() %>% gsub(".php", "", .)
+  #
+  #
+  # fp_table <- fp_table %>%  add_column(fantasypro_id = fp_ids, .before = 1)
+  #
   fp_table <- fp_table %>%  add_column(Pos = position, .after = "Player")
 
   if(position %in% c("QB", "RB", "WR", "TE")){
@@ -74,11 +76,10 @@ scrape_fantasypros <- function(week = NULL,
       gsub("safety", "dst_safety", ., ignore.case = TRUE)
   }
 
-  fp_table <- janitor::clean_names(fp_table) %>%
-    clean_format() %>%  type_convert()
+  fp_table <- ff_clean_names(fp_table)
 
-  if(any(names(fp_table) == "fantasypro_id"))
-    fp_table <- fp_table %>% add_column(id = id_col(fp_table$fantasypro_id, "fantasypro_id"), .before = 1)
-  
+  # if(any(names(fp_table) == "fantasypro_id"))
+  #   fp_table <- fp_table %>% add_column(id = id_col(fp_table$fantasypro_id, "fantasypro_id"), .before = 1)
+  #
   structure(fp_table, source = "FantasyPros", season = current_season(), week = week, position = position)
 }

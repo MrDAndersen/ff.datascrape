@@ -34,6 +34,7 @@ Collate:
     'scrape_fantasyshark.R'
     'scrape_fftoday.R'
     'scrape_flea.R'
+    'scrape_helpers.R'
     'scrape_nerd.R'
     'scrape_nfl.R'
     'scrape_numfire.R'

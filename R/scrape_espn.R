@@ -1,5 +1,5 @@
 #' Scrape data from ESPN
-#' 
+#'
 #' Use this function to srape fantasy football projections from ESPN
 #' @param season The year that data will be scraped for
 #' @param week The week that data will be scraped for. If \code{= 0} or omitted
@@ -11,18 +11,18 @@
 scrape_espn <- function(season, week = NULL, position = c("QB", "RB", "WR", "TE", "DST", "K")){
   espn_positions <- c("QB" = 0, "RB" = 2, "WR" = 4, "TE" = 6, "DST" = 16, "K" = 17)
   espn_base <- str_to_url("http://games.espn.com/ffl/tools/projections")
-  
+
   position <- match.arg(position)
 
   if(season > current_season()){
     stop("Invalid season. Please specify ", current_season(), " or earlier", call. = FALSE)
   }
-  
+
   if(season < current_season()){
-    warning("Requesting data from before the ", current_season(), 
+    warning("Requesting data from before the ", current_season(),
             " may yield inaccurate data.", call. = FALSE)
   }
-  
+
   espn_qry <- list(slotCategoryId = espn_positions[[position]])
 
   if(is.null(week) || week == 0){
@@ -32,60 +32,30 @@ scrape_espn <- function(season, week = NULL, position = c("QB", "RB", "WR", "TE"
       stop("When specifying a week please only use numbers between 1 and 17", call. = FALSE)
     espn_qry$scoringPeriodId <- week
   }
-  
+
   espn_qry$seasonId <- season
 
   espn_qry$startIndex <- 0
 
   espn_url <- modify_url(espn_base, query = espn_qry)
 
-  espn_session <- html_session(espn_url)
+  espn_data <- scrape_html_data(espn_url)
 
-  espn_data <- data.frame()
-  repeat({
-    espn_page <- read_html(espn_session)
+  if(position != "DST"){
+    espn_data <- espn_data %>%
+      extract("PLAYER, TEAM POS", into = c("PLAYER", "TEAM", "POS", "STATUS"),
+              "([A-Za-z .'-\\*]+),\\s([A-Za-z]+)\\s*([A-Za-z]+)\\s*([A-Za-z]*)")
+  } else {
+    espn_data <- espn_data %>%
+      extract("PLAYER, TEAM POS", into = c("PLAYER", "POS"),
+              "([A-Za-z0-9 ./'-\\*]+)\\s([A-Za-z/]+)")
+  }
 
-    espn_tbl <- espn_page %>%
-      html_node("#playertable_0") %>%
-      html_table()
-
-    names(espn_tbl) <- gsub("DEFENSIVE PLAYERS |PLAYERS |KICKERS ", "",
-                            paste(names(espn_tbl), espn_tbl[1,]))
-
-    espn_tbl <- espn_tbl[-1,]
-
-    if(position != "DST"){
-      espn_tbl <- espn_tbl %>%
-        extract("PLAYER, TEAM POS", into = c("PLAYER", "TEAM", "POS", "STATUS"),
-                "([A-Za-z .'-\\*]+),\\s([A-Za-z]+)\\s*([A-Za-z]+)\\s*([A-Za-z]*)")
-    } else {
-      espn_tbl <- espn_tbl %>%
-        extract("PLAYER, TEAM POS", into = c("PLAYER", "POS"),
-                "([A-Za-z0-9 ./'-\\*]+)\\s([A-Za-z/]+)")
-    }
-    espn_ids <- espn_page %>%
-      html_nodes("table td.playertablePlayerName a.flexpop:first-of-type") %>%
-      html_attr("playerid")
-
-    espn_tbl <- espn_tbl %>% add_column(espn_id = espn_ids, .before = 1)
-
-    if(any(names(espn_tbl) == "PASSING C/A")){
-      espn_tbl <- espn_tbl %>%
-        extract(col = "PASSING C/A", c("PASSING COMP", "PASSING ATT"),
-                "([0-9]+\\.*[0-9]*)/([0-9]+\\.*[0-9]*)")
-    }
-
-    espn_data <- bind_rows(espn_data, espn_tbl)
-
-    next_url <- espn_page %>%
-      html_node("a:contains('NEXT')") %>%
-      html_attr("href")
-
-    if(is.na(next_url))
-      break
-
-    espn_session <- espn_session %>% jump_to(next_url)
-  })
+  if(any(names(espn_data) == "PASSING C/A")){
+    espn_data <- espn_data %>%
+      extract(col = "PASSING C/A", c("PASSING COMP", "PASSING ATT"),
+              "([0-9]+\\.*[0-9]*)/([0-9]+\\.*[0-9]*)")
+  }
 
   switch(position,
          "K" = {
@@ -99,8 +69,7 @@ scrape_espn <- function(season, week = NULL, position = c("QB", "RB", "WR", "TE"
              separate("FG 4049", c("FG 4049", "FG ATT 4049"), sep ="/") %>%
              separate("FG 50", c("FG 50", "FG ATT 50"), sep ="/") %>%
              separate("FG TOT", c("FG", "FG ATT"), sep ="/") %>%
-             separate("XP", c("XP", "XP ATT"), sep ="/") %>%
-             rename(espn_id = espnid)
+             separate("XP", c("XP", "XP ATT"), sep ="/")
 
          },
          "DST" = {
@@ -117,11 +86,7 @@ scrape_espn <- function(season, week = NULL, position = c("QB", "RB", "WR", "TE"
          names(espn_data) <- offensive_columns(names(espn_data))
   )
 
-  espn_data <- espn_data %>% janitor::clean_names() %>%
-    clean_format() %>%  type_convert()
-
-  if(any(names(espn_data) == "espn_id"))
-    espn_data <- espn_data %>% add_column(id = id_col(espn_data$espn_id, "espn_id"), .before = 1)
+  espn_data <- ff_clean_names(espn_data)
 
   structure(espn_data, source = "ESPN", season = season, week = week, position = position)
 }

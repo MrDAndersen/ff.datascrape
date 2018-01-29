@@ -68,53 +68,11 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
 
   player_cols <- c("Offense", "Kickers", "Defense/Special Teams", "Defensive Players")
 
-  yahoo_data <- data.frame()
+  yahoo_data <- scrape_html_data(yahoo_url)
 
-  repeat({
-
-
-    yahoo_tbl <- yahoo_session %>%
-      html_node("table[class *='Table-interactive']") %>%
-      html_table()
-
-    names(yahoo_tbl)  <- gsub("[^[:alnum:]]$", "",
-                              trimws(paste(names(yahoo_tbl), yahoo_tbl[1,])))
-
-    yahoo_tbl <- yahoo_tbl[-1,]
-
-    names(yahoo_tbl) <- trimws(names(yahoo_tbl))
-    yahoo_tbl <- yahoo_tbl %>% repair_names(prefix = "")
-
-    tbl_cols <- setdiff(names(yahoo_tbl),
-                        grep("^[0-9]+$", names(yahoo_tbl), value = TRUE))
-    tbl_cols <- setdiff(tbl_cols, "NA")
-
-    yahoo_tbl <- yahoo_tbl %>% select(one_of(tbl_cols))
-
-
-    player_col <- intersect(player_cols, names(yahoo_tbl))
-    names(player_col) <- "Yahoo_Player"
-    yahoo_tbl <- yahoo_tbl %>% rename(!!!player_col)
-
-    player_id <- yahoo_session %>%
-      html_nodes("a[href *= 'nfl/players']:not(a[class *='playernote']), a[href *= 'nfl/teams']:not(a[class *='playernote'])") %>%
-      html_attr("href") %>%
-      basename()
-
-    if(length(player_id) > 0 )
-      yahoo_tbl <- yahoo_tbl %>% add_column(yahoo_id = player_id, .before = 1)
-
-    yahoo_data <- bind_rows(yahoo_data, yahoo_tbl)
-
-    next_url <- yahoo_session %>%
-      html_node("a:contains('Next')") %>%
-      html_attr("href")
-
-    if(is.na(next_url))
-      break
-
-    yahoo_session <- next_url %>% jump_to(x=yahoo_session, url =.)
-  })
+  player_col <- intersect(player_cols, names(yahoo_data))
+  names(player_col) <- "Yahoo_Player"
+  yahoo_data <- yahoo_data %>% rename(!!!player_col)
 
   yahoo_data <- yahoo_data %>%
     extract(., Yahoo_Player, c("Note", "Player", "Team", "Pos", "Status/Game/Opp"),
@@ -146,7 +104,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
       gsub("\\-", "",.)
   }
 
-  if(position == "DEF"){
+  if(position == "DST"){
     def_cols <- c(dst_pts_allow = "Pts vs.",  dst_sack = "Tackles Sack",
                   dst_safety = "Tackles Safe", dst_TFL = "Tackles TFL",
                   dst_Int = "Turnovers Int",    dst_Fum_Rec = "Turnovers Fum Rec",
@@ -158,7 +116,10 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
                   dst_Return_Tds = "Return TD")
 
     rename_cols <- def_cols[which(def_cols %in% names(yahoo_data))]
-    yahoo_data <- yahoo_data %>% rename(!!!rename_cols)
+    yahoo_data <- yahoo_data %>% rename(!!!rename_cols) %>%
+      mutate(src_id = recode(src_id, !!!yahoo_def))
+
+    yahoo_data <- yahoo_data %>% mutate(id = id_col(yahoo_data$src_id, "stats_id"))
   }
 
   if(position %in% c("D", "DB", "DL", "LB", "DT", "DE", "CB", "S")){
@@ -175,11 +136,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
     yahoo_data <- yahoo_data %>% rename(!!!rename_cols)
   }
 
-  yahoo_data <- janitor::clean_names(yahoo_data) %>%
-    clean_format() %>%  type_convert() %>% mutate(yahoo_id = recode(yahoo_id, !!!yahoo_def))
-
-  if(any(names(yahoo_data) == "yahoo_id"))
-    yahoo_data <- yahoo_data %>% add_column(id = id_col(yahoo_data$yahoo_id, "stats_id"), .before = 1)
+  yahoo_data <- ff_clean_names(yahoo_data)
 
   structure(yahoo_data, source = "Yahoo", type = stat_type, season = season, week = week, position = position)
 }
