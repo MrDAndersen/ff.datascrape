@@ -44,7 +44,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
 
   yahoo_base <- str_to_url("https://football.fantasysports.yahoo.com/f1/")
 
-  yahoo_qry <- list(sort = "PTS", sdir = "1", status = "A", pos = ifelse(position == "DST", "DEF", position),
+  yahoo_qry <- list(sort = "PTS", sdir = "1", status = "ALL", pos = ifelse(position == "DST", "DEF", position),
                     stat1 = "", jsenabled = 1, count = 0)
 
   yahoo_qry$stat1 <- switch(
@@ -64,7 +64,7 @@ scrape_yahoo <- function(stat_type = c("Projected",  "Actual", "Remaining Season
 
   yahoo_url <- modify_url(yahoo_base, path = yahoo_path, query = yahoo_qry)
 
-  yahoo_session <- yahoo_url %>% html_session()
+  yahoo_session <- yahoo_url %>% rvest::session()
 
   player_cols <- c("Offense", "Kickers", "Defense/Special Teams", "Defensive Players")
 
