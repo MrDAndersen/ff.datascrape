@@ -81,7 +81,7 @@ scrape_html_data <- function(data_url){
 
   # Start an html session
   if(data_host != "www.fantasysharks.com"){
-    data_session <- html_session(data_url)
+    data_session <- rvest::session(data_url)
   } else{
     data_session <- data_url
   }
