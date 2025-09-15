@@ -80,8 +80,8 @@ get_src_data <- function(season, week, position, sources){
       src_result <- lapply(src_pos, function(p){
         src_args$position = p
         res <- do.call(scrape_func[[src]], src_args)
-        if(nrow(res)>0)
-          res$data_src <- src
+        #if(nrow(res)>0)
+        #  res$data_src <- src
         if(any(grepl("_id$", names(res)))){
           id_column <- names(select(res, ends_with("_id")))
           names(id_column) <- "src_id"
@@ -101,7 +101,7 @@ get_src_data <- function(season, week, position, sources){
       src_result <- do.call(scrape_func[[src]], src_args)
 
       src_result <- lapply(src_result, function(t){
-        t$data_src <- src
+        # t$data_src <- src
         if(!any(grepl("_id$", names(t))))
           t$src_id <- NA
         return(t)
@@ -113,13 +113,8 @@ get_src_data <- function(season, week, position, sources){
 
   names(source_result) <- sources
 
+  source_result %>%
+    transpose() %>%
+    map(bind_rows, .id = "data_src")
 
-  result_by_pos <- lapply(position, function(p){
-    p_data <- bind_rows(lapply(source_result, `[[`, p))
-    p_cols <- select(p_data, one_of(c("id", "src_id", "data_src")))
-    stat_cols <- select(p_data, matches("^pass|^rush|^rec|^fumb|^xp|^fg|^dst|^idp|^two|^sack|^ret|^reg"))
-    return(bind_cols(p_cols, stat_cols))
-  })
-  names(result_by_pos) <- position
-  return(result_by_pos)
 }

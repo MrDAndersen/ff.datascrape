@@ -25,6 +25,8 @@ Collate:
     'helper_variables.R'
     'helpers.R'
     'impute_funcs.R'
+    'scoring_helpers.R'
+    'scoring_settings.R'
     'scrape_cbs.R'
     'scrape_data.R'
     'scrape_ecr.R'

@@ -2,17 +2,11 @@
 % Please edit documentation in R/impute_funcs.R
 \name{Impute}
 \alias{Impute}
-\alias{pass_impute}
-\alias{rush_impute}
-\alias{rec_impute}
+\alias{impute_na_off}
 \alias{kick_impute}
 \title{Imputing values for missing data}
 \usage{
-pass_impute(pass_tbl)
-
-rush_impute(rush_tbl)
-
-rec_impute(rec_tbl)
+impute_na_off(tbl)
 
 kick_impute(kick_tbl)
 }

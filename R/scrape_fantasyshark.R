@@ -61,6 +61,13 @@ scrape_fantasysharks <- function(season = NULL,  week = NULL,
     }
   }
 
+  if(any(names(fs_table) %in%  c(">= 250 yd", ">= 300 yd", ">= 350 yd", ">= 400 yd" ))){
+    fs_table <- fs_table %>%
+      rename("Pass 250 yds" =  ">= 250 yd", "Pass 300 yds" = ">= 300 yd",
+             "Pass 350 yds" = ">= 350 yd", "Pass 400 yds" = ">= 400 yd")
+  }
+
+
   if(position %in% c("QB", "RB", "WR", "TE", "K")){
     names(fs_table) <- names(fs_table) %>%
       gsub(pattern = "(^att$|^comp$)", replacement = "pass \\1", ignore.case = TRUE) %>%

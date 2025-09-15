@@ -54,12 +54,13 @@ html_site <- list(
 
 make_df_colnames <- function(tbl){
   rm_txt <- c("DEFENSIVE PLAYERS ", "PLAYERS ", "KICKERS ", "[[:cntrl:]]",
-              "Sort", "First:", "Last:", "^Projected ", "\\sWeek [0-9]+$",
-              "Wild Card$", "Divisional$", "Conference$", "[^[:alnum:]]$")
+              "Sort", "First:", "Last:", "^Projected ", "\\sWeek [0-9]+",
+              "\\sWild Card", "\\sDivisional", "\\sConference",  "\\sSuper Bowl",
+              "[^[:alnum:]]$")
   rm_pattern <- paste(rm_txt, collapse = "|")
   cnames <- str_trim(paste(names(tbl), tbl[1,]))
   cnames <- str_trim(gsub(rm_pattern, "", cnames))
-  cnames[which(nchar(cnames) == 0)] <- "X"
+  cnames[which(nchar(cnames) == 0)] <- "Z"
   return(make.unique(cnames, sep = ""))
 }
 
@@ -101,6 +102,9 @@ scrape_html_data <- function(data_url){
                          data_page %>% html_node(table_css)) %>%
       html_table(header = TRUE)
 
+    if(nrow(data_table) == 0)
+      break
+
     if(data_host == "fantasydata.com"){
       names(data_table)[2:length(data_table)] <- data_page %>%
         html_nodes("table tr th a") %>%
@@ -115,8 +119,8 @@ scrape_html_data <- function(data_url){
       names(data_table) <- make.unique(names(data_table), sep = "")
     }
 
-    if(any(grepl("^[Xx]", names(data_table)))){
-      data_table <- data_table %>% select(-matches("^[Xx]"))
+    if(any(grepl("^[Zz]", names(data_table)))){
+      data_table <- data_table %>% select(-matches("^[Zz]"))
     }
 
     if(!is.null(pid_css)){

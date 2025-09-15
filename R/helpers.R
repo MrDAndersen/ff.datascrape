@@ -218,3 +218,5 @@ sum_columns <- function(tbl, ..., na.rm = FALSE){
   sum_vars <- quos(...)
   select(tbl, !!! sum_vars) %>% rowSums(na.rm = na.rm)
 }
+
+
